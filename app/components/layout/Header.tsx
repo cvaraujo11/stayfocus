@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Menu, X, Sun, Moon, HelpCircle, Anchor } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { Sidebar } from './Sidebar'
+import { UserMenu } from './UserMenu'
 import Link from 'next/link'
 
 export function Header() {
@@ -126,15 +127,8 @@ export function Header() {
               </button>
             </Link>
 
-            {/* User profile */}
-            <Link href="/perfil">
-              <button 
-                className="h-8 w-8 rounded-full bg-perfil-primary hover:bg-perfil-secondary text-white flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-perfil-primary"
-                aria-label="Informações Pessoais"
-              >
-                <span className="text-sm font-medium">U</span>
-              </button>
-            </Link>
+            {/* User Menu with Logout */}
+            <UserMenu />
           </div>
         </div>
       </header>
