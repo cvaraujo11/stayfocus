@@ -25,12 +25,12 @@ export default function FinancasPage() {
 
   // Setup real-time sync
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       const cleanup = setupRealtimeSync(user.id)
       return cleanup
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user?.id])
 
   if (authLoading) {
     return (

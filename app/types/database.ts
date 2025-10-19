@@ -44,6 +44,72 @@ export type Database = {
         }
         Relationships: []
       }
+      alimentacao_planejamento: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          descricao: string
+          dia_semana: number | null
+          horario: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          descricao: string
+          dia_semana?: number | null
+          horario: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          descricao?: string
+          dia_semana?: number | null
+          horario?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      alimentacao_hidratacao: {
+        Row: {
+          copos_bebidos: number
+          created_at: string
+          data: string
+          id: string
+          meta_diaria: number
+          ultimo_registro: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          copos_bebidos?: number
+          created_at?: string
+          data?: string
+          id?: string
+          meta_diaria?: number
+          ultimo_registro?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          copos_bebidos?: number
+          created_at?: string
+          data?: string
+          id?: string
+          meta_diaria?: number
+          ultimo_registro?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       atividades: {
         Row: {
           categoria: string
@@ -462,7 +528,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          data_fim?: string |
+          data_fim?: string | null
           data_inicio: string
           descricao?: string | null
           id?: string
@@ -483,6 +549,60 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      hiperfoco_tarefas: {
+        Row: {
+          id: string
+          hiperfoco_id: string
+          user_id: string
+          texto: string
+          concluida: boolean
+          tarefa_pai_id: string | null
+          ordem: number
+          cor: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          hiperfoco_id: string
+          user_id: string
+          texto: string
+          concluida?: boolean
+          tarefa_pai_id?: string | null
+          ordem?: number
+          cor?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          hiperfoco_id?: string
+          user_id?: string
+          texto?: string
+          concluida?: boolean
+          tarefa_pai_id?: string | null
+          ordem?: number
+          cor?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hiperfoco_tarefas_hiperfoco_id_fkey"
+            columns: ["hiperfoco_id"]
+            isOneToOne: false
+            referencedRelation: "hiperfocos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "hiperfoco_tarefas_tarefa_pai_id_fkey"
+            columns: ["tarefa_pai_id"]
+            isOneToOne: false
+            referencedRelation: "hiperfoco_tarefas"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       lista_compras: {
         Row: {
@@ -712,6 +832,122 @@ export type Database = {
         }
         Relationships: []
       }
+      saude_medicamentos: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          data_inicio: string
+          dosagem: string | null
+          frequencia: string
+          horarios: string[]
+          id: string
+          intervalo_minutos: number
+          nome: string
+          observacoes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          data_inicio?: string
+          dosagem?: string | null
+          frequencia?: string
+          horarios: string[]
+          id?: string
+          intervalo_minutos?: number
+          nome: string
+          observacoes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          data_inicio?: string
+          dosagem?: string | null
+          frequencia?: string
+          horarios?: string[]
+          id?: string
+          intervalo_minutos?: number
+          nome?: string
+          observacoes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      saude_tomadas_medicamentos: {
+        Row: {
+          created_at: string
+          data_hora: string
+          horario_programado: string | null
+          id: string
+          medicamento_id: string
+          observacoes: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_hora?: string
+          horario_programado?: string | null
+          id?: string
+          medicamento_id: string
+          observacoes?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_hora?: string
+          horario_programado?: string | null
+          id?: string
+          medicamento_id?: string
+          observacoes?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saude_tomadas_medicamentos_medicamento_id_fkey"
+            columns: ["medicamento_id"]
+            isOneToOne: false
+            referencedRelation: "saude_medicamentos"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      saude_registros_humor: {
+        Row: {
+          created_at: string
+          data: string
+          fatores: string[]
+          id: string
+          nivel: number
+          notas: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          fatores?: string[]
+          id?: string
+          nivel: number
+          notas?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          fatores?: string[]
+          id?: string
+          nivel?: number
+          notas?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       users_profile: {
         Row: {
           created_at: string
@@ -769,9 +1005,9 @@ export type Tables<
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["View
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -780,115 +1016,80 @@ export type Tables<
       Row: infer R
     }
   ? R
-  : nev
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-    DefaultSchema["View
-    ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
     DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-      Row: infer
-      }
+      Row: infer R
+    }
   ? R
-  : nver
+  : never
   : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
   | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals 
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables]
-    : never = neve
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Insert: infer
-    }
+    Insert: infer I
+  }
   ? I
   : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
   ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Insert: infI
-   
-     
-      : n
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
-      DefaultSchemaTableNameOrOptions extends
-      | keyof DefaultSchema["Tables"]
-      | { schema: keyof DatabaseWithoutInternals,
+  DefaultSchemaTableNameOrOptions extends
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-        schema: keyof DatabaseWithoutInternals
-      }
-    ?keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables
-    : never = never,
+    schema: keyof DatabaseWithoutInternals
+  }
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ?DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-  Update: infer
-
-    ?
-    : nev
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Update: inf U
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
-
-    : never
-    : never
-
-    export type Enums<
-      DefaultSchemaEnumNameOrOptions extends
-      | keyof DefaultSchema["Enums
-      | { schema: keyof DatabaseWithoutInternals },
-      EnumName extends DefaultSchemaEnumNameOrOptions extends {
-        schema: keyof DatabaseWithoutInternals
-      }
-      ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums
-    : never = neve
-    > = DefaultSchemaEnumNameOrOptions extends {
-      schema: keyof DatabaseWithoutInternals
-    }
-      ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-      : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-      ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-      : never
-
-    export type CompositeTypes<
-      PublicCompositeTypeNameOrOptions extends
-      | keyof DefaultSchema["CompositeTypes]
-      | { schema: keyof DatabaseWithoutInternals 
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-        schema: keyof DatabaseWithoutInternals
-      }
-      ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-      : never = never,
-    > = PublicCompositeTypeNameOrOptions extends {
-      schema: keyof DatabaseWithoutInternals
-    }
-      ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-      : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-      ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOption
-    : never
-
-    export const Constants = {
-      public: {
-        Enums: {},
-      },
-    } as const
-]s
-  }, "r,"]
-}
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
   ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
   : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ?DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
   ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
   : never

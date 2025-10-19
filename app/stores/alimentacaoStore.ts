@@ -9,11 +9,19 @@ type AlimentacaoRefeicaoRow = Database['public']['Tables']['alimentacao_refeicoe
 type AlimentacaoRefeicaoInsert = Database['public']['Tables']['alimentacao_refeicoes']['Insert']
 type AlimentacaoRefeicaoUpdate = Database['public']['Tables']['alimentacao_refeicoes']['Update']
 
+// Tipos temporários para novas tabelas (serão substituídos após executar migrations e regenerar types)
+// TODO: Remover após executar migrations e regenerar app/types/database.ts
+type SupabaseClient = typeof supabase
+
 // Tipos
 export type Refeicao = {
   id: string
   horario: string
   descricao: string
+  dia_semana?: number | null
+  ativo?: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export type RegistroRefeicao = {
@@ -25,12 +33,26 @@ export type RegistroRefeicao = {
   created_at: string
 }
 
+export type HidratacaoDiaria = {
+  id: string
+  data: string
+  copos_bebidos: number
+  meta_diaria: number
+  ultimo_registro: string | null
+  created_at: string
+  updated_at: string
+}
+
 type AlimentacaoState = {
-  // Planejador de Refeições (client-side only, not persisted to DB)
+  // Planejador de Refeições (persisted to Supabase)
   refeicoes: Refeicao[]
-  adicionarRefeicao: (horario: string, descricao: string) => void
-  atualizarRefeicao: (id: string, horario: string, descricao: string) => void
-  removerRefeicao: (id: string) => void
+  loadingPlanejamento: boolean
+  errorPlanejamento: string | null
+  carregarPlanejamento: (userId: string) => Promise<void>
+  adicionarRefeicao: (horario: string, descricao: string, diaSemana?: number | null) => Promise<void>
+  atualizarRefeicao: (id: string, horario?: string, descricao?: string, diaSemana?: number | null, ativo?: boolean) => Promise<void>
+  removerRefeicao: (id: string) => Promise<void>
+  setupRealtimeSyncPlanejamento: (userId: string) => () => void
   
   // Registro de Refeições (persisted to Supabase)
   registros: RegistroRefeicao[]
@@ -42,48 +64,186 @@ type AlimentacaoState = {
   removerRegistro: (id: string) => Promise<void>
   setupRealtimeSync: (userId: string) => () => void
   
-  // Hidratação (client-side only, not persisted to DB)
+  // Hidratação (persisted to Supabase)
+  hidratacaoHoje: HidratacaoDiaria | null
+  loadingHidratacao: boolean
+  errorHidratacao: string | null
+  carregarHidratacaoHoje: (userId: string) => Promise<void>
+  adicionarCopo: () => Promise<void>
+  removerCopo: () => Promise<void>
+  ajustarMeta: (valor: number) => Promise<void>
+  resetHidratacao: () => void
+  setupRealtimeSyncHidratacao: (userId: string) => () => void
+  
+  // Computed values para compatibilidade
   coposBebidos: number
   metaDiaria: number
   ultimoRegistro: string | null
-  adicionarCopo: () => void
-  removerCopo: () => void
-  ajustarMeta: (valor: number) => void
-  resetHidratacao: () => void
 }
 
 export const useAlimentacaoStore = create<AlimentacaoState>((set, get) => ({
-  // Planejador de Refeições - Estado Inicial (client-side only)
-  refeicoes: [
-    { id: '1', horario: '07:30', descricao: 'Café da manhã' },
-    { id: '2', horario: '12:00', descricao: 'Almoço' },
-    { id: '3', horario: '16:00', descricao: 'Lanche da tarde' },
-    { id: '4', horario: '19:30', descricao: 'Jantar' },
-  ],
+  // Planejador de Refeições - Supabase Integration
+  refeicoes: [],
+  loadingPlanejamento: false,
+  errorPlanejamento: null,
   
-  adicionarRefeicao: (horario, descricao) => 
-    set((state) => ({
-      refeicoes: [
-        ...state.refeicoes,
-        {
-          id: Date.now().toString(),
-          horario,
-          descricao,
-        },
-      ],
-    })),
+  carregarPlanejamento: async (userId: string) => {
+    set({ loadingPlanejamento: true, errorPlanejamento: null })
+    try {
+      // @ts-ignore - Tabela será criada após executar migration 003
+      const { data, error } = await supabase
+        .from('alimentacao_planejamento')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('ativo', true)
+        .order('horario', { ascending: true })
+      
+      if (error) throw error
+      
+      set({ 
+        refeicoes: data as Refeicao[], 
+        loadingPlanejamento: false 
+      })
+    } catch (error) {
+      console.error('Error loading planejamento:', error)
+      set({ 
+        errorPlanejamento: error instanceof Error ? error.message : 'Erro ao carregar planejamento',
+        loadingPlanejamento: false 
+      })
+    }
+  },
   
-  atualizarRefeicao: (id, horario, descricao) =>
-    set((state) => ({
-      refeicoes: state.refeicoes.map((refeicao) =>
-        refeicao.id === id ? { ...refeicao, horario, descricao } : refeicao
-      ),
-    })),
+  adicionarRefeicao: async (horario: string, descricao: string, diaSemana?: number | null) => {
+    set({ loadingPlanejamento: true, errorPlanejamento: null })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('Usuário não autenticado')
+      }
+      
+      const novaRefeicao = {
+        user_id: user.id,
+        horario,
+        descricao,
+        dia_semana: diaSemana,
+        ativo: true,
+      }
+      
+      const { data: inserted, error } = await supabase
+        .from('alimentacao_planejamento')
+        .insert(novaRefeicao)
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      set((state) => ({
+        refeicoes: [...state.refeicoes, inserted as Refeicao],
+        loadingPlanejamento: false,
+      }))
+    } catch (error) {
+      console.error('Error adding refeicao:', error)
+      set({ 
+        errorPlanejamento: error instanceof Error ? error.message : 'Erro ao adicionar refeição',
+        loadingPlanejamento: false 
+      })
+      throw error
+    }
+  },
   
-  removerRefeicao: (id) =>
-    set((state) => ({
-      refeicoes: state.refeicoes.filter((refeicao) => refeicao.id !== id),
-    })),
+  atualizarRefeicao: async (id: string, horario?: string, descricao?: string, diaSemana?: number | null, ativo?: boolean) => {
+    set({ loadingPlanejamento: true, errorPlanejamento: null })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('Usuário não autenticado')
+      }
+      
+      const updates: any = {}
+      if (horario !== undefined) updates.horario = horario
+      if (descricao !== undefined) updates.descricao = descricao
+      if (diaSemana !== undefined) updates.dia_semana = diaSemana
+      if (ativo !== undefined) updates.ativo = ativo
+      
+      const { data: updated, error } = await supabase
+        .from('alimentacao_planejamento')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      set((state) => ({
+        refeicoes: state.refeicoes.map((refeicao) =>
+          refeicao.id === id ? (updated as Refeicao) : refeicao
+        ),
+        loadingPlanejamento: false,
+      }))
+    } catch (error) {
+      console.error('Error updating refeicao:', error)
+      set({ 
+        errorPlanejamento: error instanceof Error ? error.message : 'Erro ao atualizar refeição',
+        loadingPlanejamento: false 
+      })
+      throw error
+    }
+  },
+  
+  removerRefeicao: async (id: string) => {
+    set({ loadingPlanejamento: true, errorPlanejamento: null })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('Usuário não autenticado')
+      }
+      
+      const { error } = await supabase
+        .from('alimentacao_planejamento')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+      
+      if (error) throw error
+      
+      set((state) => ({
+        refeicoes: state.refeicoes.filter((refeicao) => refeicao.id !== id),
+        loadingPlanejamento: false,
+      }))
+    } catch (error) {
+      console.error('Error removing refeicao:', error)
+      set({ 
+        errorPlanejamento: error instanceof Error ? error.message : 'Erro ao remover refeição',
+        loadingPlanejamento: false 
+      })
+      throw error
+    }
+  },
+  
+  setupRealtimeSyncPlanejamento: (userId: string) => {
+    return supabaseSync.subscribeToUserData<any>(
+      'alimentacao_planejamento',
+      userId,
+      (newRefeicao) => {
+        set((state) => ({
+          refeicoes: [...state.refeicoes, newRefeicao as Refeicao],
+        }))
+      },
+      (updatedRefeicao) => {
+        set((state) => ({
+          refeicoes: state.refeicoes.map((refeicao) =>
+            refeicao.id === updatedRefeicao.id ? (updatedRefeicao as Refeicao) : refeicao
+          ),
+        }))
+      },
+      (deleted) => {
+        set((state) => ({
+          refeicoes: state.refeicoes.filter((refeicao) => refeicao.id !== deleted.id),
+        }))
+      }
+    )
+  },
   
   // Registro de Refeições - Supabase Integration
   registros: [],
@@ -316,39 +476,231 @@ export const useAlimentacaoStore = create<AlimentacaoState>((set, get) => ({
     )
   },
   
-  // Hidratação - Estado Inicial (client-side only)
-  coposBebidos: 0,
-  metaDiaria: 8,
-  ultimoRegistro: null,
+  // Hidratação - Supabase Integration
+  hidratacaoHoje: null,
+  loadingHidratacao: false,
+  errorHidratacao: null,
   
-  adicionarCopo: () =>
-    set((state) => {
-      if (state.coposBebidos < state.metaDiaria) {
-        return {
-          coposBebidos: state.coposBebidos + 1,
-          ultimoRegistro: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  carregarHidratacaoHoje: async (userId: string) => {
+    set({ loadingHidratacao: true, errorHidratacao: null })
+    try {
+      const hoje = new Date().toISOString().split('T')[0]
+      
+      const { data, error } = await supabase
+        .from('alimentacao_hidratacao')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('data', hoje)
+        .maybeSingle()
+      
+      if (error && error.code !== 'PGRST116') throw error
+      
+      // Se não existe registro para hoje, criar um novo
+      if (!data) {
+        const novoRegistro = {
+          user_id: userId,
+          data: hoje,
+          copos_bebidos: 0,
+          meta_diaria: 8,
+          ultimo_registro: null,
+        }
+        
+        const { data: created, error: createError } = await supabase
+          .from('alimentacao_hidratacao')
+          .insert(novoRegistro)
+          .select()
+          .single()
+        
+        if (createError) throw createError
+        if (!created) throw new Error('Erro ao criar registro de hidratação')
+        
+        set({ 
+          hidratacaoHoje: created,
+          loadingHidratacao: false 
+        })
+      } else {
+        set({ 
+          hidratacaoHoje: data,
+          loadingHidratacao: false 
+        })
+      }
+    } catch (error) {
+      console.error('Error loading hidratacao:', error)
+      set({ 
+        errorHidratacao: error instanceof Error ? error.message : 'Erro ao carregar hidratação',
+        loadingHidratacao: false 
+      })
+    }
+  },
+  
+  adicionarCopo: async () => {
+    const state = get()
+    if (!state.hidratacaoHoje) return
+    if (state.coposBebidos >= state.metaDiaria) return
+    
+    set({ loadingHidratacao: true, errorHidratacao: null })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('Usuário não autenticado')
+      }
+      
+      const novoCopos = state.coposBebidos + 1
+      const agora = new Date().toISOString()
+      
+      const { data: updated, error } = await supabase
+        .from('alimentacao_hidratacao')
+        .update({
+          copos_bebidos: novoCopos,
+          ultimo_registro: agora,
+        })
+        .eq('id', state.hidratacaoHoje.id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      if (!updated) throw new Error('Erro ao atualizar hidratação')
+      
+      set({ 
+        hidratacaoHoje: updated,
+        loadingHidratacao: false 
+      })
+    } catch (error) {
+      console.error('Error adding copo:', error)
+      set({ 
+        errorHidratacao: error instanceof Error ? error.message : 'Erro ao adicionar copo',
+        loadingHidratacao: false 
+      })
+      throw error
+    }
+  },
+  
+  removerCopo: async () => {
+    const state = get()
+    if (!state.hidratacaoHoje) return
+    if (state.coposBebidos <= 0) return
+    
+    set({ loadingHidratacao: true, errorHidratacao: null })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('Usuário não autenticado')
+      }
+      
+      const novoCopos = Math.max(0, state.coposBebidos - 1)
+      
+      const { data: updated, error } = await supabase
+        .from('alimentacao_hidratacao')
+        .update({
+          copos_bebidos: novoCopos,
+        })
+        .eq('id', state.hidratacaoHoje.id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      if (!updated) throw new Error('Erro ao atualizar hidratação')
+      
+      set({ 
+        hidratacaoHoje: updated,
+        loadingHidratacao: false 
+      })
+    } catch (error) {
+      console.error('Error removing copo:', error)
+      set({ 
+        errorHidratacao: error instanceof Error ? error.message : 'Erro ao remover copo',
+        loadingHidratacao: false 
+      })
+      throw error
+    }
+  },
+  
+  ajustarMeta: async (valor: number) => {
+    const state = get()
+    if (!state.hidratacaoHoje) return
+    
+    const novaMeta = state.metaDiaria + valor
+    if (novaMeta < 1 || novaMeta > 20) return
+    
+    set({ loadingHidratacao: true, errorHidratacao: null })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error('Usuário não autenticado')
+      }
+      
+      const { data: updated, error } = await supabase
+        .from('alimentacao_hidratacao')
+        .update({
+          meta_diaria: novaMeta,
+        })
+        .eq('id', state.hidratacaoHoje.id)
+        .eq('user_id', user.id)
+        .select()
+        .single()
+      
+      if (error) throw error
+      if (!updated) throw new Error('Erro ao atualizar meta diária')
+      
+      set({ 
+        hidratacaoHoje: updated,
+        loadingHidratacao: false 
+      })
+    } catch (error) {
+      console.error('Error adjusting meta:', error)
+      set({ 
+        errorHidratacao: error instanceof Error ? error.message : 'Erro ao ajustar meta',
+        loadingHidratacao: false 
+      })
+      throw error
+    }
+  },
+  
+  resetHidratacao: () => {
+    set({
+      hidratacaoHoje: null,
+    })
+  },
+  
+  setupRealtimeSyncHidratacao: (userId: string) => {
+    return supabaseSync.subscribeToUserData<any>(
+      'alimentacao_hidratacao',
+      userId,
+      (newHidratacao) => {
+        const hoje = new Date().toISOString().split('T')[0]
+        if (newHidratacao.data === hoje) {
+          set({ hidratacaoHoje: newHidratacao as HidratacaoDiaria })
+        }
+      },
+      (updatedHidratacao) => {
+        const state = get()
+        if (state.hidratacaoHoje?.id === updatedHidratacao.id) {
+          set({ hidratacaoHoje: updatedHidratacao as HidratacaoDiaria })
+        }
+      },
+      (deleted) => {
+        const state = get()
+        if (state.hidratacaoHoje?.id === deleted.id) {
+          set({ hidratacaoHoje: null })
         }
       }
-      return state
-    }),
+    )
+  },
   
-  removerCopo: () =>
-    set((state) => ({
-      coposBebidos: Math.max(0, state.coposBebidos - 1),
-    })),
+  // Computed values para compatibilidade com componentes existentes
+  get coposBebidos() {
+    return get().hidratacaoHoje?.copos_bebidos ?? 0
+  },
   
-  ajustarMeta: (valor) =>
-    set((state) => {
-      const novaMeta = state.metaDiaria + valor
-      if (novaMeta >= 1 && novaMeta <= 15) {
-        return { metaDiaria: novaMeta }
-      }
-      return state
-    }),
+  get metaDiaria() {
+    return get().hidratacaoHoje?.meta_diaria ?? 8
+  },
   
-  resetHidratacao: () =>
-    set({
-      coposBebidos: 0,
-      ultimoRegistro: null,
-    }),
+  get ultimoRegistro() {
+    const ultimo = get().hidratacaoHoje?.ultimo_registro
+    if (!ultimo) return null
+    return new Date(ultimo).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  },
 }))

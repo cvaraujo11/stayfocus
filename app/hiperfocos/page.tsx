@@ -26,12 +26,12 @@ export default function HiperfocosPage() {
 
   // Setup real-time sync (separado para evitar loops)
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       const cleanup = setupRealtimeSync(user.id)
       return cleanup
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user?.id])
 
   // Show loading state while authenticating
   if (authLoading) {

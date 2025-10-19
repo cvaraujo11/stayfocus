@@ -23,12 +23,12 @@ export default function AutoconhecimentoPage() {
 
   // Setup real-time sync when user is authenticated
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       const cleanup = setupRealtimeSync(user.id)
       return cleanup
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user?.id])
 
   // Mapeamento de títulos para exibição
   const tituloAbas = {

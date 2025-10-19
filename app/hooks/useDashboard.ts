@@ -118,7 +118,8 @@ export const useDashboard = () => {
     }
     
     carregarDados()
-  }, [blocos, prioridades, nome, metasDiarias, pausasAtivas, preferenciasVisuais, getHistoricoPorData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [blocos, prioridades, nome, metasDiarias, pausasAtivas, preferenciasVisuais])
   
   return { ...data, isLoading }
 } 

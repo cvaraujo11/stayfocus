@@ -12,6 +12,7 @@ export function VisualizadorProjetos() {
     loading,
     error,
     carregarHiperfocos,
+    carregarTarefas,
     adicionarSubTarefa,
     toggleTarefaConcluida,
     toggleSubTarefaConcluida,
@@ -28,10 +29,18 @@ export function VisualizadorProjetos() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
-
+  
   const [hiperfocoAtivo, setHiperfocoAtivo] = useState<string | null>(
     hiperfocos.length > 0 ? hiperfocos[0].id : null
   )
+  
+  // Load tasks when hiperfocoAtivo changes
+  useEffect(() => {
+    if (hiperfocoAtivo) {
+      carregarTarefas(hiperfocoAtivo)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hiperfocoAtivo])
 
   const [expandidas, setExpandidas] = useState<Record<string, boolean>>({})
   const [novaTarefaTexto, setNovaTarefaTexto] = useState<Record<string, string>>({})
@@ -53,28 +62,35 @@ export function VisualizadorProjetos() {
   }
 
   // Salva a edição de uma tarefa
-  const salvarEdicao = (hiperfocoId: string, tarefaId: string, tipo: 'tarefa' | 'subtarefa', tarefaPaiId?: string) => {
+  const salvarEdicao = async (hiperfocoId: string, tarefaId: string, tipo: 'tarefa' | 'subtarefa', tarefaPaiId?: string) => {
     if (!textoEdicao[tarefaId] || textoEdicao[tarefaId].trim() === '') return
 
-    if (tipo === 'tarefa') {
-      atualizarTarefa(hiperfocoId, tarefaId, textoEdicao[tarefaId])
-    } else if (tipo === 'subtarefa' && tarefaPaiId) {
-      atualizarSubTarefa(hiperfocoId, tarefaPaiId, tarefaId, textoEdicao[tarefaId])
+    try {
+      if (tipo === 'tarefa') {
+        await atualizarTarefa(hiperfocoId, tarefaId, textoEdicao[tarefaId])
+      } else if (tipo === 'subtarefa' && tarefaPaiId) {
+        await atualizarSubTarefa(hiperfocoId, tarefaPaiId, tarefaId, textoEdicao[tarefaId])
+      }
+      setEditando(prev => ({ ...prev, [tarefaId]: false }))
+    } catch (error) {
+      console.error('Erro ao salvar edição:', error)
     }
-
-    setEditando(prev => ({ ...prev, [tarefaId]: false }))
   }
 
   // Adiciona uma nova subtarefa
-  const handleAddSubtarefa = (hiperfocoId: string, tarefaId: string) => {
+  const handleAddSubtarefa = async (hiperfocoId: string, tarefaId: string) => {
     const texto = novaTarefaTexto[tarefaId]
     if (!texto || texto.trim() === '') return
 
-    adicionarSubTarefa(hiperfocoId, tarefaId, texto)
-
-    // Limpar o input e expandir a tarefa pai
-    setNovaTarefaTexto(prev => ({ ...prev, [tarefaId]: '' }))
-    setExpandidas(prev => ({ ...prev, [tarefaId]: true }))
+    try {
+      await adicionarSubTarefa(hiperfocoId, tarefaId, texto)
+      
+      // Limpar o input e expandir a tarefa pai
+      setNovaTarefaTexto(prev => ({ ...prev, [tarefaId]: '' }))
+      setExpandidas(prev => ({ ...prev, [tarefaId]: true }))
+    } catch (error) {
+      console.error('Erro ao adicionar subtarefa:', error)
+    }
   }
 
   // Renderiza uma tarefa com suas subtarefas

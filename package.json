@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "typecheck": "tsc --noEmit",
     "analyze": "set ANALYZE=true&& npm run build",
     "test:e2e": "tsx tests/index.ts",
     "test:e2e:suite": "tsx tests/index.ts --suite",

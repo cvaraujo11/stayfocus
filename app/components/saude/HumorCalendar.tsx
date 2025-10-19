@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { RegistroHumor } from '@/app/store'
+import { RegistroHumor } from '@/app/lib/supabase/humor'
 import { cn } from '@/app/lib/utils'
 
 interface HumorCalendarProps {

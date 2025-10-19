@@ -1,19 +1,50 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Clock, Plus, Save, Trash2 } from 'lucide-react'
 import { useAlimentacaoStore } from '@/app/stores/alimentacaoStore'
+import { useAuth } from '@/app/contexts/AuthContext'
+import { LoadingSpinner, ErrorMessage, EmptyState } from '@/app/components/common'
 
 export function PlanejadorRefeicoes() {
-  const { refeicoes, adicionarRefeicao, atualizarRefeicao, removerRefeicao } = useAlimentacaoStore()
+  const { user } = useAuth()
+  const { 
+    refeicoes, 
+    loadingPlanejamento, 
+    errorPlanejamento,
+    carregarPlanejamento,
+    adicionarRefeicao, 
+    atualizarRefeicao, 
+    removerRefeicao,
+    setupRealtimeSyncPlanejamento
+  } = useAlimentacaoStore()
   const [novaRefeicao, setNovaRefeicao] = useState({ horario: '', descricao: '' })
   const [editando, setEditando] = useState<string | null>(null)
 
-  const handleAdicionarRefeicao = () => {
+  // Carregar planejamento ao montar
+  useEffect(() => {
+    if (user?.id) {
+      carregarPlanejamento(user.id)
+    }
+  }, [user?.id, carregarPlanejamento])
+
+  // Setup real-time sync
+  useEffect(() => {
+    if (!user?.id) return
+    
+    const unsubscribe = setupRealtimeSyncPlanejamento(user.id)
+    return () => unsubscribe()
+  }, [user?.id, setupRealtimeSyncPlanejamento])
+
+  const handleAdicionarRefeicao = async () => {
     if (!novaRefeicao.horario || !novaRefeicao.descricao) return
 
-    adicionarRefeicao(novaRefeicao.horario, novaRefeicao.descricao)
-    setNovaRefeicao({ horario: '', descricao: '' })
+    try {
+      await adicionarRefeicao(novaRefeicao.horario, novaRefeicao.descricao)
+      setNovaRefeicao({ horario: '', descricao: '' })
+    } catch (error) {
+      console.error('Erro ao adicionar refeição:', error)
+    }
   }
 
   const iniciarEdicao = (id: string, horario: string, descricao: string) => {
@@ -21,12 +52,16 @@ export function PlanejadorRefeicoes() {
     setNovaRefeicao({ horario, descricao })
   }
 
-  const salvarEdicao = () => {
+  const salvarEdicao = async () => {
     if (!editando || !novaRefeicao.horario || !novaRefeicao.descricao) return
 
-    atualizarRefeicao(editando, novaRefeicao.horario, novaRefeicao.descricao)
-    setEditando(null)
-    setNovaRefeicao({ horario: '', descricao: '' })
+    try {
+      await atualizarRefeicao(editando, novaRefeicao.horario, novaRefeicao.descricao)
+      setEditando(null)
+      setNovaRefeicao({ horario: '', descricao: '' })
+    } catch (error) {
+      console.error('Erro ao atualizar refeição:', error)
+    }
   }
 
   const cancelarEdicao = () => {
@@ -34,8 +69,42 @@ export function PlanejadorRefeicoes() {
     setNovaRefeicao({ horario: '', descricao: '' })
   }
 
+  const handleRemover = async (id: string) => {
+    try {
+      await removerRefeicao(id)
+    } catch (error) {
+      console.error('Erro ao remover refeição:', error)
+    }
+  }
+
+  if (loadingPlanejamento && refeicoes.length === 0) {
+    return (
+      <div className="flex justify-center items-center p-8">
+        <LoadingSpinner />
+        <span className="ml-2 text-gray-600 dark:text-gray-400">Carregando planejamento...</span>
+      </div>
+    )
+  }
+
+  if (errorPlanejamento) {
+    return (
+      <ErrorMessage 
+        message={errorPlanejamento} 
+        onRetry={() => user?.id && carregarPlanejamento(user.id)} 
+      />
+    )
+  }
+
   return (
     <div className="space-y-4">
+      {refeicoes.length === 0 && !loadingPlanejamento && (
+        <EmptyState
+          message="Nenhum planejamento criado ainda"
+          description="Adicione suas refeições planejadas para o dia"
+          icon={<Clock className="h-12 w-12" />}
+        />
+      )}
+      
       <div className="space-y-2">
         {refeicoes.map((refeicao) => (
           <div
@@ -94,9 +163,10 @@ export function PlanejadorRefeicoes() {
                   </svg>
                 </button>
                 <button
-                  onClick={() => removerRefeicao(refeicao.id)}
+                  onClick={() => handleRemover(refeicao.id)}
                   className="ml-1 p-1 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
                   aria-label="Remover refeição"
+                  disabled={loadingPlanejamento}
                 >
                   <Trash2 className="h-5 w-5" />
                 </button>
@@ -126,11 +196,17 @@ export function PlanejadorRefeicoes() {
           />
           <button
             onClick={handleAdicionarRefeicao}
-            disabled={!novaRefeicao.horario || !novaRefeicao.descricao}
-            className="w-full sm:w-auto px-4 py-2 bg-alimentacao-primary text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!novaRefeicao.horario || !novaRefeicao.descricao || loadingPlanejamento}
+            className="w-full sm:w-auto px-4 py-2 bg-alimentacao-primary text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           >
-            <Plus className="h-5 w-5 inline mr-1" />
-            Adicionar
+            {loadingPlanejamento ? (
+              <LoadingSpinner />
+            ) : (
+              <>
+                <Plus className="h-5 w-5 inline mr-1" />
+                Adicionar
+              </>
+            )}
           </button>
         </div>
       </div>

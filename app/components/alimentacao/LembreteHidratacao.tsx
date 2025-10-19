@@ -1,20 +1,76 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Droplet, PlusCircle, MinusCircle } from 'lucide-react'
 import { useAlimentacaoStore } from '@/app/stores/alimentacaoStore'
+import { useAuth } from '@/app/contexts/AuthContext'
+import { LoadingSpinner, ErrorMessage } from '@/app/components/common'
 
 export function LembreteHidratacao() {
+  const { user } = useAuth()
   const { 
     coposBebidos, 
     metaDiaria, 
-    ultimoRegistro, 
+    ultimoRegistro,
+    loadingHidratacao,
+    errorHidratacao,
+    carregarHidratacaoHoje,
     adicionarCopo, 
     removerCopo, 
-    ajustarMeta 
+    ajustarMeta,
+    setupRealtimeSyncHidratacao
   } = useAlimentacaoStore()
+
+  // Carregar hidratação do dia ao montar
+  useEffect(() => {
+    if (user?.id) {
+      carregarHidratacaoHoje(user.id)
+    }
+  }, [user?.id, carregarHidratacaoHoje])
+
+  // Setup real-time sync
+  useEffect(() => {
+    if (!user?.id) return
+    
+    const unsubscribe = setupRealtimeSyncHidratacao(user.id)
+    return () => unsubscribe()
+  }, [user?.id, setupRealtimeSyncHidratacao])
 
   // Calcular a porcentagem de progresso
   const progresso = Math.min((coposBebidos / metaDiaria) * 100, 100)
+
+  const handleAdicionarCopo = async () => {
+    try {
+      await adicionarCopo()
+    } catch (error) {
+      console.error('Erro ao adicionar copo:', error)
+    }
+  }
+
+  const handleRemoverCopo = async () => {
+    try {
+      await removerCopo()
+    } catch (error) {
+      console.error('Erro ao remover copo:', error)
+    }
+  }
+
+  const handleAjustarMeta = async (valor: number) => {
+    try {
+      await ajustarMeta(valor)
+    } catch (error) {
+      console.error('Erro ao ajustar meta:', error)
+    }
+  }
+
+  if (errorHidratacao) {
+    return (
+      <ErrorMessage 
+        message={errorHidratacao} 
+        onRetry={() => user?.id && carregarHidratacaoHoje(user.id)} 
+      />
+    )
+  }
 
   return (
     <div className="space-y-4">
@@ -30,25 +86,25 @@ export function LembreteHidratacao() {
         
         <div className="flex items-center space-x-2">
           <button
-            onClick={() => ajustarMeta(-1)}
-            className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => handleAjustarMeta(-1)}
+            className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Diminuir meta diária"
-            disabled={metaDiaria <= 1}
+            disabled={metaDiaria <= 1 || loadingHidratacao}
           >
             <MinusCircle className="h-6 w-6" />
           </button>
           
-          <div className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <div className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 rounded-lg min-w-[120px] text-center">
             <span className="text-sm font-medium text-blue-700 dark:text-blue-300">
               Meta: {metaDiaria} copos
             </span>
           </div>
           
           <button
-            onClick={() => ajustarMeta(1)}
-            className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={() => handleAjustarMeta(1)}
+            className="p-1 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Aumentar meta diária"
-            disabled={metaDiaria >= 15}
+            disabled={metaDiaria >= 20 || loadingHidratacao}
           >
             <PlusCircle className="h-6 w-6" />
           </button>
@@ -108,17 +164,24 @@ export function LembreteHidratacao() {
       {/* Botões de ação */}
       <div className="flex justify-center space-x-4">
         <button
-          onClick={adicionarCopo}
-          disabled={coposBebidos >= metaDiaria}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleAdicionarCopo}
+          disabled={coposBebidos >= metaDiaria || loadingHidratacao}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           aria-label="Registrar um copo de água"
         >
-          Registrar Copo
+          {loadingHidratacao ? (
+            <>
+              <LoadingSpinner />
+              <span className="ml-2">Salvando...</span>
+            </>
+          ) : (
+            'Registrar Copo'
+          )}
         </button>
         
         <button
-          onClick={removerCopo}
-          disabled={coposBebidos <= 0}
+          onClick={handleRemoverCopo}
+          disabled={coposBebidos <= 0 || loadingHidratacao}
           className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label="Remover um copo de água"
         >

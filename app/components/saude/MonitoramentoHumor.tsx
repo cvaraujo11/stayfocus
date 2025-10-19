@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
-import { Calendar, Plus, X, Edit, Trash, Smile, Frown, Meh, AlertCircle } from 'lucide-react'
-import { useAppStore } from '@/app/store'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { Calendar, Plus, X, Edit, Trash, Smile, Frown, Meh, AlertCircle, Loader2 } from 'lucide-react'
+import { useSaudeStore } from '@/app/stores/saudeStore'
+import { useAuth } from '@/app/contexts/AuthContext'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -15,15 +16,25 @@ import { HumorCalendar } from './HumorCalendar'
 import { FatoresHumor } from './FatoresHumor'
 
 export function MonitoramentoHumor() {
-  // Usar o Zustand para gerenciamento de estado
-  const { registrosHumor, adicionarRegistroHumor, atualizarRegistroHumor, removerRegistroHumor } = useAppStore(
-    (state) => ({
-      registrosHumor: state.registrosHumor || [],
-      adicionarRegistroHumor: state.adicionarRegistroHumor,
-      atualizarRegistroHumor: state.atualizarRegistroHumor,
-      removerRegistroHumor: state.removerRegistroHumor,
-    })
-  )
+  const { user } = useAuth()
+  
+  const { 
+    registrosHumor, 
+    loading,
+    error,
+    salvarRegistroHumor, 
+    removerRegistroHumor,
+    carregarRegistrosHumor,
+    setupRealtimeSync
+  } = useSaudeStore()
+  
+  useEffect(() => {
+    if (user?.id) {
+      carregarRegistrosHumor(user.id)
+      const cleanup = setupRealtimeSync(user.id)
+      return cleanup
+    }
+  }, [user?.id, carregarRegistrosHumor, setupRealtimeSync])
   
   const [novoRegistro, setNovoRegistro] = useState({
     data: new Date().toISOString().split('T')[0],
@@ -39,22 +50,38 @@ export function MonitoramentoHumor() {
   const [anoAtual, setAnoAtual] = useState(() => new Date().getFullYear())
   const [erro, setErro] = useState('')
 
+  const resetForm = useCallback(() => {
+    setNovoRegistro({
+      data: new Date().toISOString().split('T')[0],
+      nivel: 3,
+      fatores: [],
+      notas: '',
+    })
+    setEditandoId(null)
+    setMostrarForm(false)
+    setNovoFator('')
+    setErro('')
+  }, [])
+
   // Usar useCallback para funções que são passadas como props ou dependências
-  const handleAdicionarRegistro = useCallback(() => {
+  const handleAdicionarRegistro = useCallback(async () => {
     if (!novoRegistro.data) {
       setErro('A data é obrigatória')
       return
     }
 
-    adicionarRegistroHumor({
-      data: novoRegistro.data,
-      nivel: novoRegistro.nivel,
-      fatores: [...novoRegistro.fatores],
-      notas: novoRegistro.notas,
-    })
-    
-    resetForm()
-  }, [adicionarRegistroHumor, novoRegistro])
+    try {
+      await salvarRegistroHumor({
+        data: novoRegistro.data,
+        nivel: novoRegistro.nivel,
+        fatores: [...novoRegistro.fatores],
+        notas: novoRegistro.notas || null,
+      })
+      resetForm()
+    } catch (err) {
+      setErro('Erro ao salvar registro')
+    }
+  }, [salvarRegistroHumor, novoRegistro, resetForm])
 
   const iniciarEdicao = useCallback((registro: typeof registrosHumor[0]) => {
     setEditandoId(registro.id)
@@ -62,26 +89,29 @@ export function MonitoramentoHumor() {
       data: registro.data,
       nivel: registro.nivel,
       fatores: [...registro.fatores],
-      notas: registro.notas,
+      notas: registro.notas || '',
     })
     setMostrarForm(true)
   }, [])
 
-  const salvarEdicao = useCallback(() => {
+  const salvarEdicao = useCallback(async () => {
     if (!editandoId || !novoRegistro.data) {
       setErro('A data é obrigatória')
       return
     }
 
-    atualizarRegistroHumor(editandoId, {
-      data: novoRegistro.data,
-      nivel: novoRegistro.nivel,
-      fatores: [...novoRegistro.fatores],
-      notas: novoRegistro.notas,
-    })
-    
-    resetForm()
-  }, [atualizarRegistroHumor, editandoId, novoRegistro])
+    try {
+      await salvarRegistroHumor({
+        data: novoRegistro.data,
+        nivel: novoRegistro.nivel,
+        fatores: [...novoRegistro.fatores],
+        notas: novoRegistro.notas || null,
+      })
+      resetForm()
+    } catch (err) {
+      setErro('Erro ao atualizar registro')
+    }
+  }, [salvarRegistroHumor, editandoId, novoRegistro, resetForm])
 
   const adicionarFator = useCallback(() => {
     if (!novoFator) return
@@ -106,19 +136,6 @@ export function MonitoramentoHumor() {
       fatores: novoRegistro.fatores.filter((f) => f !== fator),
     })
   }, [novoRegistro])
-
-  const resetForm = useCallback(() => {
-    setNovoRegistro({
-      data: new Date().toISOString().split('T')[0],
-      nivel: 3,
-      fatores: [],
-      notas: '',
-    })
-    setEditandoId(null)
-    setMostrarForm(false)
-    setNovoFator('')
-    setErro('')
-  }, [])
 
   // Usar useMemo para cálculos ou transformações de dados
   const registrosOrdenados = useMemo(() => {
@@ -217,8 +234,24 @@ export function MonitoramentoHumor() {
     return new Date(anoAtual, mesAtual).toLocaleDateString('pt-BR', { month: 'long' })
   }, [mesAtual, anoAtual])
 
+  if (loading && registrosHumor.length === 0) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <span className="ml-3 text-gray-600 dark:text-gray-400">Carregando registros de humor...</span>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
+      {error && (
+        <Alert variant="error">
+          <AlertCircle className="h-4 w-4" />
+          <span>{error}</span>
+        </Alert>
+      )}
+      
       <div className="flex flex-col gap-4">
         <Card className="flex-1">
           <div className="flex justify-between items-center mb-4">

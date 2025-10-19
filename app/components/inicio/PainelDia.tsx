@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Edit2, Check, X, Trash2, Plus, TrendingUp, Moon, Clock, Utensils, BookOpen } from 'lucide-react'
+import { Edit2, Check, X, Trash2, Plus, TrendingUp, Moon, Clock, Utensils } from 'lucide-react'
 import { Button } from '@/app/components/ui/Button'
 import { Input } from '@/app/components/ui/Input'
 import { usePainelDiaStore, BlocoTempo } from '@/app/stores/painelDiaStore'
@@ -39,14 +39,14 @@ export function PainelDia() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
-  // Setup real-time sync
+  // Setup real-time sync - DEVE executar apenas UMA VEZ quando user está disponível
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       const cleanup = setupRealtimeSync(user.id)
       return cleanup
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user?.id])
 
   // Função para obter a cor de fundo baseada na categoria
   const getBgColor = (categoria: BlocoTempo['categoria']) => {
@@ -55,8 +55,6 @@ export function PainelDia() {
         return 'bg-opacity-40 bg-inicio-light border-inicio-primary'
       case 'alimentacao':
         return 'bg-opacity-40 bg-alimentacao-light border-alimentacao-primary'
-      case 'estudos':
-        return 'bg-opacity-40 bg-estudos-light border-estudos-primary'
       case 'saude':
         return 'bg-opacity-40 bg-saude-light border-saude-primary'
       case 'lazer':
@@ -156,7 +154,7 @@ export function PainelDia() {
     <div className="space-y-4">
       {/* Dashboard Summary */}
       {dadosDia && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
           {/* Prioridades */}
           <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
             <div className="flex items-center gap-2 mb-1">
@@ -213,19 +211,6 @@ export function PainelDia() {
             </div>
           </div>
 
-          {/* Estudos */}
-          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/20 dark:to-indigo-800/20 p-3 rounded-lg border border-indigo-200 dark:border-indigo-800">
-            <div className="flex items-center gap-2 mb-1">
-              <BookOpen className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-              <span className="text-xs font-medium text-indigo-900 dark:text-indigo-100">Estudos</span>
-            </div>
-            <div className="text-2xl font-bold text-indigo-700 dark:text-indigo-300">
-              {dadosDia.estudos.minutos}
-            </div>
-            <div className="text-xs text-indigo-600 dark:text-indigo-400">
-              minutos
-            </div>
-          </div>
         </div>
       )}
 
@@ -363,14 +348,6 @@ export function PainelDia() {
                       onClick={() => editarCategoria(bloco.id, 'alimentacao')}
                     >
                       Alimentação
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant={bloco.categoria === 'estudos' ? 'default' : 'outline'}
-                      className="py-0 px-2 h-6 text-xs bg-estudos-light text-estudos-primary border-estudos-primary"
-                      onClick={() => editarCategoria(bloco.id, 'estudos')}
-                    >
-                      Estudos
                     </Button>
                     <Button
                       size="sm"

@@ -9,7 +9,7 @@ export type BlocoTempo = {
   id: string
   hora: string
   atividade: string
-  categoria: 'inicio' | 'alimentacao' | 'estudos' | 'saude' | 'lazer' | 'nenhuma'
+  categoria: 'inicio' | 'alimentacao' | 'saude' | 'lazer' | 'nenhuma'
   data: string
 }
 
@@ -38,10 +38,6 @@ export type DadosDia = {
   }
   alimentacao: {
     refeicoes: number
-  }
-  estudos: {
-    minutos: number
-    disciplinas: string[]
   }
 }
 
@@ -117,15 +113,6 @@ export const usePainelDiaStore = create<PainelDiaState>((set, get) => ({
 
       if (alimentacaoError) throw alimentacaoError
 
-      // Query estudos_registros for today
-      const { data: estudos, error: estudosError } = await supabase
-        .from('estudos_registros')
-        .select('duracao_minutos, disciplina')
-        .eq('user_id', userId)
-        .eq('data', hoje)
-
-      if (estudosError) throw estudosError
-
       // Calculate sleep hours
       let horasSono = null
       if (sonoData?.hora_dormir && sonoData?.hora_acordar) {
@@ -160,10 +147,6 @@ export const usePainelDiaStore = create<PainelDiaState>((set, get) => ({
         },
         alimentacao: {
           refeicoes: alimentacao?.length || 0,
-        },
-        estudos: {
-          minutos: estudos?.reduce((acc, e) => acc + e.duracao_minutos, 0) || 0,
-          disciplinas: Array.from(new Set(estudos?.map(e => e.disciplina) || [])),
         },
       }
 

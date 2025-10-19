@@ -45,14 +45,14 @@ export function ListaPrioridades() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
-  // Setup real-time sync
+  // Setup real-time sync - DEVE executar apenas UMA VEZ quando user está disponível
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       const cleanup = setupRealtimeSync(user.id)
       return cleanup
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user?.id])
 
   // Carregar prioridades do dia atual
   useEffect(() => {

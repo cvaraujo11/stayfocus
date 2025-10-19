@@ -6,7 +6,7 @@ export type Tarefa = {
   id: string
   texto: string
   concluida: boolean
-  categoria: 'inicio' | 'alimentacao' | 'estudos' | 'saude' | 'lazer'
+  categoria: 'inicio' | 'alimentacao' | 'saude' | 'lazer'
   data: string // formato YYYY-MM-DD
 }
 
@@ -14,7 +14,7 @@ export type BlocoTempo = {
   id: string
   hora: string
   atividade: string
-  categoria: 'inicio' | 'alimentacao' | 'estudos' | 'saude' | 'lazer' | 'nenhuma'
+  categoria: 'inicio' | 'alimentacao' | 'saude' | 'lazer' | 'nenhuma'
   data: string // formato YYYY-MM-DD
 }
 
@@ -69,40 +69,40 @@ interface AppState {
   refeicoes: Refeicao[]
   medicacoes: Medicacao[]
   configuracao: ConfiguracaoUsuario
-  
+
   // Novos estados para medicamentos e humor refatorados
   medicamentos: Medicamento[]
   registrosHumor: RegistroHumor[]
-  
+
   // Ações para tarefas
   adicionarTarefa: (tarefa: Omit<Tarefa, 'id'>) => void
   removerTarefa: (id: string) => void
   toggleTarefaConcluida: (id: string) => void
-  
+
   // Ações para blocos de tempo
   adicionarBlocoTempo: (bloco: Omit<BlocoTempo, 'id'>) => void
   atualizarBlocoTempo: (id: string, bloco: Partial<BlocoTempo>) => void
   removerBlocoTempo: (id: string) => void
-  
+
   // Ações para refeições
   adicionarRefeicao: (refeicao: Omit<Refeicao, 'id'>) => void
   removerRefeicao: (id: string) => void
-  
+
   // Ações para medicações
   adicionarMedicacao: (medicacao: Omit<Medicacao, 'id'>) => void
   marcarMedicacaoTomada: (id: string, data: string, horario: string, tomada: boolean) => void
-  
+
   // Novas ações para medicamentos refatorados
   adicionarMedicamento: (medicamento: Omit<Medicamento, 'id'>) => void
   atualizarMedicamento: (id: string, medicamento: Partial<Omit<Medicamento, 'id'>>) => void
   removerMedicamento: (id: string) => void
   registrarTomadaMedicamento: (id: string, dataHora: string) => void
-  
+
   // Novas ações para registros de humor
   adicionarRegistroHumor: (registro: Omit<RegistroHumor, 'id'>) => void
   atualizarRegistroHumor: (id: string, registro: Partial<Omit<RegistroHumor, 'id'>>) => void
   removerRegistroHumor: (id: string) => void
-  
+
   // Ações para configurações
   atualizarConfiguracao: (config: Partial<ConfiguracaoUsuario>) => void
 }
@@ -122,7 +122,7 @@ export const useAppStore = create<AppState>()(
         temaEscuro: false,
         reducaoEstimulos: false,
       },
-      
+
       // Novos estados iniciais para medicamentos e humor
       medicamentos: [],
       registrosHumor: [],
@@ -132,12 +132,12 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           tarefas: [...state.tarefas, { ...tarefa, id: Date.now().toString() }],
         })),
-      
+
       removerTarefa: (id) =>
         set((state) => ({
           tarefas: state.tarefas.filter((t) => t.id !== id),
         })),
-      
+
       toggleTarefaConcluida: (id) =>
         set((state) => ({
           tarefas: state.tarefas.map((t) =>
@@ -150,14 +150,14 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           blocosTempo: [...state.blocosTempo, { ...bloco, id: Date.now().toString() }],
         })),
-      
+
       atualizarBlocoTempo: (id, bloco) =>
         set((state) => ({
           blocosTempo: state.blocosTempo.map((b) =>
             b.id === id ? { ...b, ...bloco } : b
           ),
         })),
-      
+
       removerBlocoTempo: (id) =>
         set((state) => ({
           blocosTempo: state.blocosTempo.filter((b) => b.id !== id),
@@ -168,7 +168,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           refeicoes: [...state.refeicoes, { ...refeicao, id: Date.now().toString() }],
         })),
-      
+
       removerRefeicao: (id) =>
         set((state) => ({
           refeicoes: state.refeicoes.filter((r) => r.id !== id),
@@ -182,7 +182,7 @@ export const useAppStore = create<AppState>()(
             { ...medicacao, id: Date.now().toString() },
           ],
         })),
-      
+
       marcarMedicacaoTomada: (id, data, horario, tomada) =>
         set((state) => ({
           medicacoes: state.medicacoes.map((med) => {
@@ -198,7 +198,7 @@ export const useAppStore = create<AppState>()(
             return med
           }),
         })),
-        
+
       // Implementações das novas ações para medicamentos
       adicionarMedicamento: (medicamento) =>
         set((state) => ({
@@ -210,26 +210,26 @@ export const useAppStore = create<AppState>()(
             },
           ],
         })),
-        
+
       atualizarMedicamento: (id, medicamento) =>
         set((state) => ({
           medicamentos: state.medicamentos.map((med) =>
             med.id === id ? { ...med, ...medicamento } : med
           ),
         })),
-        
+
       removerMedicamento: (id) =>
         set((state) => ({
           medicamentos: state.medicamentos.filter((med) => med.id !== id),
         })),
-        
+
       registrarTomadaMedicamento: (id, dataHora) =>
         set((state) => ({
           medicamentos: state.medicamentos.map((med) =>
             med.id === id ? { ...med, ultimaTomada: dataHora } : med
           ),
         })),
-        
+
       // Implementações das novas ações para registros de humor
       adicionarRegistroHumor: (registro) =>
         set((state) => ({
@@ -241,14 +241,14 @@ export const useAppStore = create<AppState>()(
             },
           ],
         })),
-        
+
       atualizarRegistroHumor: (id, registro) =>
         set((state) => ({
           registrosHumor: state.registrosHumor.map((reg) =>
             reg.id === id ? { ...reg, ...registro } : reg
           ),
         })),
-        
+
       removerRegistroHumor: (id) =>
         set((state) => ({
           registrosHumor: state.registrosHumor.filter((reg) => reg.id !== id),

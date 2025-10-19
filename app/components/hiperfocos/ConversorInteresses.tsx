@@ -92,12 +92,12 @@ export function ConversorInteresses() {
         tempoLimiteInt
       )
 
-      // Adicionar as tarefas ao hiperfoco (client-side only)
-      formData.novasTarefas
-        .filter(tarefa => tarefa.trim() !== '')
-        .forEach(tarefa => {
-          adicionarTarefa(hiperfocoId, tarefa)
-        })
+      // Adicionar as tarefas ao hiperfoco (persisted to database)
+      const tarefasValidas = formData.novasTarefas.filter(tarefa => tarefa.trim() !== '')
+      
+      for (const tarefa of tarefasValidas) {
+        await adicionarTarefa(hiperfocoId, tarefa)
+      }
 
       // Feedback de sucesso
       setFeedback({

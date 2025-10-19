@@ -25,20 +25,20 @@ export default function PerfilPage() {
 
   // Load profile data when user is available
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       carregarPerfil(user.id)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user?.id])
 
   // Setup real-time sync
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       const cleanup = setupRealtimeSync(user.id)
       return cleanup
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user?.id])
 
   // Aplicar classes de acessibilidade ao carregar a página
   useEffect(() => {

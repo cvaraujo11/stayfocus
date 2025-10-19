@@ -4,6 +4,7 @@ import { supabaseSync } from '@/app/lib/supabase/sync'
 import type { Database } from '@/app/types/database'
 
 type HiperfocoRow = Database['public']['Tables']['hiperfocos']['Row']
+type TarefaRow = Database['public']['Tables']['hiperfoco_tarefas']['Row']
 
 // Tipos
 export type Tarefa = {
@@ -11,6 +12,7 @@ export type Tarefa = {
   texto: string
   concluida: boolean
   cor?: string
+  ordem?: number
 }
 
 export type Hiperfoco = {
@@ -52,17 +54,18 @@ type HiperfocosState = {
   removerHiperfoco: (id: string) => Promise<void>
   alterarStatus: (id: string, status: 'ativo' | 'pausado' | 'concluido') => Promise<void>
   
-  // Tarefas (client-side only, not persisted to database)
-  adicionarTarefa: (hiperfocoId: string, texto: string) => string
-  atualizarTarefa: (hiperfocoId: string, tarefaId: string, texto: string) => void
-  toggleTarefaConcluida: (hiperfocoId: string, tarefaId: string) => void
-  removerTarefa: (hiperfocoId: string, tarefaId: string) => void
+  // Tarefas (persisted to database)
+  carregarTarefas: (hiperfocoId: string) => Promise<void>
+  adicionarTarefa: (hiperfocoId: string, texto: string) => Promise<string>
+  atualizarTarefa: (hiperfocoId: string, tarefaId: string, texto: string) => Promise<void>
+  toggleTarefaConcluida: (hiperfocoId: string, tarefaId: string) => Promise<void>
+  removerTarefa: (hiperfocoId: string, tarefaId: string) => Promise<void>
   
-  // Sub-tarefas (client-side only, not persisted to database)
-  adicionarSubTarefa: (hiperfocoId: string, tarefaPaiId: string, texto: string) => string
-  atualizarSubTarefa: (hiperfocoId: string, tarefaPaiId: string, subTarefaId: string, texto: string) => void
-  toggleSubTarefaConcluida: (hiperfocoId: string, tarefaPaiId: string, subTarefaId: string) => void
-  removerSubTarefa: (hiperfocoId: string, tarefaPaiId: string, subTarefaId: string) => void
+  // Sub-tarefas (persisted to database)
+  adicionarSubTarefa: (hiperfocoId: string, tarefaPaiId: string, texto: string) => Promise<string>
+  atualizarSubTarefa: (hiperfocoId: string, tarefaPaiId: string, subTarefaId: string, texto: string) => Promise<void>
+  toggleSubTarefaConcluida: (hiperfocoId: string, tarefaPaiId: string, subTarefaId: string) => Promise<void>
+  removerSubTarefa: (hiperfocoId: string, tarefaPaiId: string, subTarefaId: string) => Promise<void>
   
   // Alternância (client-side only, not persisted to database)
   sessoes: SessaoAlternancia[]
@@ -273,175 +276,413 @@ export const useHiperfocosStore = create<HiperfocosState>((set, get) => ({
     }
   },
       
-  // Ações para tarefas (client-side only)
-  adicionarTarefa: (hiperfocoId, texto) => {
-    const tarefaId = Date.now().toString()
-    
-    set((state) => ({
-      hiperfocos: state.hiperfocos.map((hiperfoco) => {
-        if (hiperfoco.id === hiperfocoId) {
-          return {
-            ...hiperfoco,
-            tarefas: [
-              ...hiperfoco.tarefas,
-              {
-                id: tarefaId,
-                texto,
-                concluida: false
+  // Carregar tarefas de um hiperfoco
+  carregarTarefas: async (hiperfocoId) => {
+    try {
+      const supabase = createSupabaseClient()
+      const { data, error } = await supabase
+        .from('hiperfoco_tarefas')
+        .select('*')
+        .eq('hiperfoco_id', hiperfocoId)
+        .order('ordem', { ascending: true })
+      
+      if (error) throw error
+      
+      // Separar tarefas principais de sub-tarefas
+      const tarefasPrincipais = data.filter(t => !t.tarefa_pai_id)
+      const subTarefasData = data.filter(t => t.tarefa_pai_id)
+      
+      // Organizar sub-tarefas por tarefa pai
+      const subTarefasMap: Record<string, Tarefa[]> = {}
+      subTarefasData.forEach(st => {
+        if (!subTarefasMap[st.tarefa_pai_id!]) {
+          subTarefasMap[st.tarefa_pai_id!] = []
+        }
+        subTarefasMap[st.tarefa_pai_id!].push({
+          id: st.id,
+          texto: st.texto,
+          concluida: st.concluida,
+          cor: st.cor || undefined,
+          ordem: st.ordem
+        })
+      })
+      
+      set((state) => ({
+        hiperfocos: state.hiperfocos.map((hiperfoco) => {
+          if (hiperfoco.id === hiperfocoId) {
+            return {
+              ...hiperfoco,
+              tarefas: tarefasPrincipais.map(t => ({
+                id: t.id,
+                texto: t.texto,
+                concluida: t.concluida,
+                cor: t.cor || undefined,
+                ordem: t.ordem
+              })),
+              subTarefas: subTarefasMap
+            }
+          }
+          return hiperfoco
+        })
+      }))
+    } catch (error: any) {
+      console.error('Erro ao carregar tarefas:', error)
+      set({ error: error.message || 'Erro ao carregar tarefas' })
+    }
+  },
+  
+  // Ações para tarefas (persisted to database)
+  adicionarTarefa: async (hiperfocoId, texto) => {
+    try {
+      const supabase = createSupabaseClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+      
+      // Buscar o número atual de tarefas para definir a ordem
+      const { data: tarefasExistentes } = await supabase
+        .from('hiperfoco_tarefas')
+        .select('ordem')
+        .eq('hiperfoco_id', hiperfocoId)
+        .is('tarefa_pai_id', null)
+        .order('ordem', { ascending: false })
+        .limit(1)
+      
+      const novaOrdem = tarefasExistentes && tarefasExistentes.length > 0 
+        ? tarefasExistentes[0].ordem + 1 
+        : 0
+      
+      const { data, error } = await supabase
+        .from('hiperfoco_tarefas')
+        .insert({
+          hiperfoco_id: hiperfocoId,
+          user_id: user.id,
+          texto,
+          concluida: false,
+          tarefa_pai_id: null,
+          ordem: novaOrdem
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      const novaTarefa: Tarefa = {
+        id: data.id,
+        texto: data.texto,
+        concluida: data.concluida,
+        cor: data.cor || undefined,
+        ordem: data.ordem
+      }
+      
+      set((state) => ({
+        hiperfocos: state.hiperfocos.map((hiperfoco) => {
+          if (hiperfoco.id === hiperfocoId) {
+            return {
+              ...hiperfoco,
+              tarefas: [...hiperfoco.tarefas, novaTarefa],
+              // Inicializar a entrada de subTarefas para esta tarefa
+              subTarefas: {
+                ...hiperfoco.subTarefas,
+                [data.id]: []
               }
-            ],
-            // Inicializar a entrada de subTarefas para esta tarefa
-            subTarefas: {
-              ...hiperfoco.subTarefas,
-              [tarefaId]: []
             }
           }
-        }
-        return hiperfoco
-      })
-    }))
-    
-    return tarefaId
+          return hiperfoco
+        })
+      }))
+      
+      return data.id
+    } catch (error: any) {
+      console.error('Erro ao adicionar tarefa:', error)
+      set({ error: error.message || 'Erro ao adicionar tarefa' })
+      throw error
+    }
   },
   
-  atualizarTarefa: (hiperfocoId, tarefaId, texto) => {
-    set((state) => ({
-      hiperfocos: state.hiperfocos.map((hiperfoco) => {
-        if (hiperfoco.id === hiperfocoId) {
-          return {
-            ...hiperfoco,
-            tarefas: hiperfoco.tarefas.map((tarefa) =>
-              tarefa.id === tarefaId ? { ...tarefa, texto } : tarefa
-            )
-          }
-        }
-        return hiperfoco
-      })
-    }))
-  },
-  
-  toggleTarefaConcluida: (hiperfocoId, tarefaId) => {
-    set((state) => ({
-      hiperfocos: state.hiperfocos.map((hiperfoco) => {
-        if (hiperfoco.id === hiperfocoId) {
-          return {
-            ...hiperfoco,
-            tarefas: hiperfoco.tarefas.map((tarefa) =>
-              tarefa.id === tarefaId
-                ? { ...tarefa, concluida: !tarefa.concluida }
-                : tarefa
-            )
-          }
-        }
-        return hiperfoco
-      })
-    }))
-  },
-  
-  removerTarefa: (hiperfocoId, tarefaId) => {
-    set((state) => ({
-      hiperfocos: state.hiperfocos.map((hiperfoco) => {
-        if (hiperfoco.id === hiperfocoId) {
-          // Filtrar a tarefa e também remover suas subtarefas
-          const { [tarefaId]: subTarefasARemover, ...restoSubTarefas } = hiperfoco.subTarefas
-          
-          return {
-            ...hiperfoco,
-            tarefas: hiperfoco.tarefas.filter((tarefa) => tarefa.id !== tarefaId),
-            subTarefas: restoSubTarefas
-          }
-        }
-        return hiperfoco
-      })
-    }))
-  },
-  
-  // Ações para sub-tarefas (client-side only)
-  adicionarSubTarefa: (hiperfocoId, tarefaPaiId, texto) => {
-    const subTarefaId = Date.now().toString()
-    
-    set((state) => ({
-      hiperfocos: state.hiperfocos.map((hiperfoco) => {
-        if (hiperfoco.id === hiperfocoId) {
-          return {
-            ...hiperfoco,
-            subTarefas: {
-              ...hiperfoco.subTarefas,
-              [tarefaPaiId]: [
-                ...(hiperfoco.subTarefas[tarefaPaiId] || []),
-                {
-                  id: subTarefaId,
-                  texto,
-                  concluida: false
-                }
-              ]
-            }
-          }
-        }
-        return hiperfoco
-      })
-    }))
-    
-    return subTarefaId
-  },
-  
-  atualizarSubTarefa: (hiperfocoId, tarefaPaiId, subTarefaId, texto) => {
-    set((state) => ({
-      hiperfocos: state.hiperfocos.map((hiperfoco) => {
-        if (hiperfoco.id === hiperfocoId) {
-          return {
-            ...hiperfoco,
-            subTarefas: {
-              ...hiperfoco.subTarefas,
-              [tarefaPaiId]: (hiperfoco.subTarefas[tarefaPaiId] || []).map((subTarefa) =>
-                subTarefa.id === subTarefaId ? { ...subTarefa, texto } : subTarefa
+  atualizarTarefa: async (hiperfocoId, tarefaId, texto) => {
+    try {
+      const supabase = createSupabaseClient()
+      const { error } = await supabase
+        .from('hiperfoco_tarefas')
+        .update({ texto })
+        .eq('id', tarefaId)
+      
+      if (error) throw error
+      
+      set((state) => ({
+        hiperfocos: state.hiperfocos.map((hiperfoco) => {
+          if (hiperfoco.id === hiperfocoId) {
+            return {
+              ...hiperfoco,
+              tarefas: hiperfoco.tarefas.map((tarefa) =>
+                tarefa.id === tarefaId ? { ...tarefa, texto } : tarefa
               )
             }
           }
-        }
-        return hiperfoco
-      })
-    }))
+          return hiperfoco
+        })
+      }))
+    } catch (error: any) {
+      console.error('Erro ao atualizar tarefa:', error)
+      set({ error: error.message || 'Erro ao atualizar tarefa' })
+      throw error
+    }
   },
   
-  toggleSubTarefaConcluida: (hiperfocoId, tarefaPaiId, subTarefaId) => {
-    set((state) => ({
-      hiperfocos: state.hiperfocos.map((hiperfoco) => {
-        if (hiperfoco.id === hiperfocoId) {
-          return {
-            ...hiperfoco,
-            subTarefas: {
-              ...hiperfoco.subTarefas,
-              [tarefaPaiId]: (hiperfoco.subTarefas[tarefaPaiId] || []).map((subTarefa) =>
-                subTarefa.id === subTarefaId
-                  ? { ...subTarefa, concluida: !subTarefa.concluida }
-                  : subTarefa
+  toggleTarefaConcluida: async (hiperfocoId, tarefaId) => {
+    try {
+      const supabase = createSupabaseClient()
+      
+      // Buscar o estado atual da tarefa
+      const { data: tarefaAtual } = await supabase
+        .from('hiperfoco_tarefas')
+        .select('concluida')
+        .eq('id', tarefaId)
+        .single()
+      
+      if (!tarefaAtual) throw new Error('Tarefa não encontrada')
+      
+      const { error } = await supabase
+        .from('hiperfoco_tarefas')
+        .update({ concluida: !tarefaAtual.concluida })
+        .eq('id', tarefaId)
+      
+      if (error) throw error
+      
+      set((state) => ({
+        hiperfocos: state.hiperfocos.map((hiperfoco) => {
+          if (hiperfoco.id === hiperfocoId) {
+            return {
+              ...hiperfoco,
+              tarefas: hiperfoco.tarefas.map((tarefa) =>
+                tarefa.id === tarefaId
+                  ? { ...tarefa, concluida: !tarefa.concluida }
+                  : tarefa
               )
             }
           }
-        }
-        return hiperfoco
-      })
-    }))
+          return hiperfoco
+        })
+      }))
+    } catch (error: any) {
+      console.error('Erro ao alternar tarefa concluída:', error)
+      set({ error: error.message || 'Erro ao alternar tarefa concluída' })
+      throw error
+    }
   },
   
-  removerSubTarefa: (hiperfocoId, tarefaPaiId, subTarefaId) => {
-    set((state) => ({
-      hiperfocos: state.hiperfocos.map((hiperfoco) => {
-        if (hiperfoco.id === hiperfocoId) {
-          return {
-            ...hiperfoco,
-            subTarefas: {
-              ...hiperfoco.subTarefas,
-              [tarefaPaiId]: (hiperfoco.subTarefas[tarefaPaiId] || []).filter(
-                (subTarefa) => subTarefa.id !== subTarefaId
-              )
+  removerTarefa: async (hiperfocoId, tarefaId) => {
+    try {
+      const supabase = createSupabaseClient()
+      
+      // A cascade delete vai remover automaticamente as subtarefas
+      const { error } = await supabase
+        .from('hiperfoco_tarefas')
+        .delete()
+        .eq('id', tarefaId)
+      
+      if (error) throw error
+      
+      set((state) => ({
+        hiperfocos: state.hiperfocos.map((hiperfoco) => {
+          if (hiperfoco.id === hiperfocoId) {
+            // Filtrar a tarefa e também remover suas subtarefas
+            const { [tarefaId]: subTarefasARemover, ...restoSubTarefas } = hiperfoco.subTarefas
+            
+            return {
+              ...hiperfoco,
+              tarefas: hiperfoco.tarefas.filter((tarefa) => tarefa.id !== tarefaId),
+              subTarefas: restoSubTarefas
             }
           }
-        }
-        return hiperfoco
-      })
-    }))
+          return hiperfoco
+        })
+      }))
+    } catch (error: any) {
+      console.error('Erro ao remover tarefa:', error)
+      set({ error: error.message || 'Erro ao remover tarefa' })
+      throw error
+    }
+  },
+  
+  // Ações para sub-tarefas (persisted to database)
+  adicionarSubTarefa: async (hiperfocoId, tarefaPaiId, texto) => {
+    try {
+      const supabase = createSupabaseClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Usuário não autenticado')
+      
+      // Buscar o número atual de subtarefas para definir a ordem
+      const { data: subTarefasExistentes } = await supabase
+        .from('hiperfoco_tarefas')
+        .select('ordem')
+        .eq('hiperfoco_id', hiperfocoId)
+        .eq('tarefa_pai_id', tarefaPaiId)
+        .order('ordem', { ascending: false })
+        .limit(1)
+      
+      const novaOrdem = subTarefasExistentes && subTarefasExistentes.length > 0 
+        ? subTarefasExistentes[0].ordem + 1 
+        : 0
+      
+      const { data, error } = await supabase
+        .from('hiperfoco_tarefas')
+        .insert({
+          hiperfoco_id: hiperfocoId,
+          user_id: user.id,
+          texto,
+          concluida: false,
+          tarefa_pai_id: tarefaPaiId,
+          ordem: novaOrdem
+        })
+        .select()
+        .single()
+      
+      if (error) throw error
+      
+      const novaSubTarefa: Tarefa = {
+        id: data.id,
+        texto: data.texto,
+        concluida: data.concluida,
+        cor: data.cor || undefined,
+        ordem: data.ordem
+      }
+      
+      set((state) => ({
+        hiperfocos: state.hiperfocos.map((hiperfoco) => {
+          if (hiperfoco.id === hiperfocoId) {
+            return {
+              ...hiperfoco,
+              subTarefas: {
+                ...hiperfoco.subTarefas,
+                [tarefaPaiId]: [
+                  ...(hiperfoco.subTarefas[tarefaPaiId] || []),
+                  novaSubTarefa
+                ]
+              }
+            }
+          }
+          return hiperfoco
+        })
+      }))
+      
+      return data.id
+    } catch (error: any) {
+      console.error('Erro ao adicionar subtarefa:', error)
+      set({ error: error.message || 'Erro ao adicionar subtarefa' })
+      throw error
+    }
+  },
+  
+  atualizarSubTarefa: async (hiperfocoId, tarefaPaiId, subTarefaId, texto) => {
+    try {
+      const supabase = createSupabaseClient()
+      const { error } = await supabase
+        .from('hiperfoco_tarefas')
+        .update({ texto })
+        .eq('id', subTarefaId)
+      
+      if (error) throw error
+      
+      set((state) => ({
+        hiperfocos: state.hiperfocos.map((hiperfoco) => {
+          if (hiperfoco.id === hiperfocoId) {
+            return {
+              ...hiperfoco,
+              subTarefas: {
+                ...hiperfoco.subTarefas,
+                [tarefaPaiId]: (hiperfoco.subTarefas[tarefaPaiId] || []).map((subTarefa) =>
+                  subTarefa.id === subTarefaId ? { ...subTarefa, texto } : subTarefa
+                )
+              }
+            }
+          }
+          return hiperfoco
+        })
+      }))
+    } catch (error: any) {
+      console.error('Erro ao atualizar subtarefa:', error)
+      set({ error: error.message || 'Erro ao atualizar subtarefa' })
+      throw error
+    }
+  },
+  
+  toggleSubTarefaConcluida: async (hiperfocoId, tarefaPaiId, subTarefaId) => {
+    try {
+      const supabase = createSupabaseClient()
+      
+      // Buscar o estado atual da subtarefa
+      const { data: subTarefaAtual } = await supabase
+        .from('hiperfoco_tarefas')
+        .select('concluida')
+        .eq('id', subTarefaId)
+        .single()
+      
+      if (!subTarefaAtual) throw new Error('Subtarefa não encontrada')
+      
+      const { error } = await supabase
+        .from('hiperfoco_tarefas')
+        .update({ concluida: !subTarefaAtual.concluida })
+        .eq('id', subTarefaId)
+      
+      if (error) throw error
+      
+      set((state) => ({
+        hiperfocos: state.hiperfocos.map((hiperfoco) => {
+          if (hiperfoco.id === hiperfocoId) {
+            return {
+              ...hiperfoco,
+              subTarefas: {
+                ...hiperfoco.subTarefas,
+                [tarefaPaiId]: (hiperfoco.subTarefas[tarefaPaiId] || []).map((subTarefa) =>
+                  subTarefa.id === subTarefaId
+                    ? { ...subTarefa, concluida: !subTarefa.concluida }
+                    : subTarefa
+                )
+              }
+            }
+          }
+          return hiperfoco
+        })
+      }))
+    } catch (error: any) {
+      console.error('Erro ao alternar subtarefa concluída:', error)
+      set({ error: error.message || 'Erro ao alternar subtarefa concluída' })
+      throw error
+    }
+  },
+  
+  removerSubTarefa: async (hiperfocoId, tarefaPaiId, subTarefaId) => {
+    try {
+      const supabase = createSupabaseClient()
+      const { error } = await supabase
+        .from('hiperfoco_tarefas')
+        .delete()
+        .eq('id', subTarefaId)
+      
+      if (error) throw error
+      
+      set((state) => ({
+        hiperfocos: state.hiperfocos.map((hiperfoco) => {
+          if (hiperfoco.id === hiperfocoId) {
+            return {
+              ...hiperfoco,
+              subTarefas: {
+                ...hiperfoco.subTarefas,
+                [tarefaPaiId]: (hiperfoco.subTarefas[tarefaPaiId] || []).filter(
+                  (subTarefa) => subTarefa.id !== subTarefaId
+                )
+              }
+            }
+          }
+          return hiperfoco
+        })
+      }))
+    } catch (error: any) {
+      console.error('Erro ao remover subtarefa:', error)
+      set({ error: error.message || 'Erro ao remover subtarefa' })
+      throw error
+    }
   },
   
   // Ações para sessões de alternância (client-side only)

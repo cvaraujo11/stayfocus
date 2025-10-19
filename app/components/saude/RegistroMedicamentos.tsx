@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
-import { Pill, Plus, X, Edit, Trash, Check, Clock, Calendar } from 'lucide-react'
-import { useAppStore } from '@/app/store'
+import { useState, useCallback, useMemo, useEffect } from 'react'
+import { Pill, Plus, X, Edit, Trash, Check, Clock, Calendar, Loader2, AlertCircle } from 'lucide-react'
+import { useSaudeStore } from '@/app/stores/saudeStore'
+import { useAuth } from '@/app/contexts/AuthContext'
 import { Card } from '../ui/Card'
 import { Button } from '../ui/Button'
 import { Input } from '../ui/Input'
@@ -15,16 +16,54 @@ import { MedicamentosList } from './MedicamentosList'
 import { StatCard } from './StatCard'
 
 export function RegistroMedicamentos() {
-  // Usar o Zustand para gerenciamento de estado
-  const { medicamentos, adicionarMedicamento, atualizarMedicamento, removerMedicamento, registrarTomadaMedicamento } = useAppStore(
-    (state) => ({
-      medicamentos: state.medicamentos || [],
-      adicionarMedicamento: state.adicionarMedicamento,
-      atualizarMedicamento: state.atualizarMedicamento,
-      removerMedicamento: state.removerMedicamento,
-      registrarTomadaMedicamento: state.registrarTomadaMedicamento,
-    })
-  )
+  const { user } = useAuth()
+  const { 
+    medicamentos, 
+    tomadas,
+    loading, 
+    error,
+    adicionarMedicamento, 
+    atualizarMedicamento, 
+    removerMedicamento, 
+    registrarTomada,
+    carregarMedicamentos,
+    carregarHistoricoTomadas,
+    obterUltimaTomada,
+    setupRealtimeSync
+  } = useSaudeStore()
+  
+  const [ultimasTomadas, setUltimasTomadas] = useState<Record<string, any>>({})
+  
+  useEffect(() => {
+    if (user?.id) {
+      carregarMedicamentos(user.id)
+      const cleanup = setupRealtimeSync(user.id)
+      return cleanup
+    }
+  }, [user?.id, carregarMedicamentos, setupRealtimeSync])
+  
+  // Carrega histórico de tomadas de hoje para estatísticas
+  useEffect(() => {
+    const carregarTomadasHoje = async () => {
+      if (!user?.id || medicamentos.length === 0) return
+      
+      const hoje = new Date().toISOString().split('T')[0]
+      const tomadasTemp: Record<string, any> = {}
+      
+      for (const med of medicamentos) {
+        try {
+          const ultimaTomada = await obterUltimaTomada(med.id)
+          tomadasTemp[med.id] = ultimaTomada
+        } catch (error) {
+          console.error(`Erro ao carregar última tomada:`, error)
+        }
+      }
+      
+      setUltimasTomadas(tomadasTemp)
+    }
+    
+    carregarTomadasHoje()
+  }, [user?.id, medicamentos, obterUltimaTomada])
   
   const [novoMedicamento, setNovoMedicamento] = useState({
     nome: '',
@@ -33,7 +72,8 @@ export function RegistroMedicamentos() {
     horarios: ['08:00'],
     observacoes: '',
     dataInicio: new Date().toISOString().split('T')[0],
-    intervalo: 240, // 4 horas por padrão (em minutos)
+    intervaloMinutos: 240,
+    ativo: true,
   })
   
   const [editandoId, setEditandoId] = useState<string | null>(null)
@@ -42,6 +82,23 @@ export function RegistroMedicamentos() {
   const [erro, setErro] = useState('')
 
   // Usar useCallback para funções que são passadas como props ou dependências
+  const resetForm = useCallback(() => {
+    setNovoMedicamento({
+      nome: '',
+      dosagem: '',
+      frequencia: 'Diária',
+      horarios: ['08:00'],
+      observacoes: '',
+      dataInicio: new Date().toISOString().split('T')[0],
+      intervaloMinutos: 240,
+      ativo: true,
+    })
+    setEditandoId(null)
+    setMostrarForm(false)
+    setNovoHorario('08:00')
+    setErro('')
+  }, [])
+
   const handleAdicionarMedicamento = useCallback(() => {
     if (!novoMedicamento.nome) {
       setErro('O nome do medicamento é obrigatório')
@@ -55,17 +112,17 @@ export function RegistroMedicamentos() {
     
     adicionarMedicamento({
       nome: novoMedicamento.nome,
-      dosagem: novoMedicamento.dosagem,
+      dosagem: novoMedicamento.dosagem || '',
       frequencia: novoMedicamento.frequencia,
       horarios: [...novoMedicamento.horarios],
-      observacoes: novoMedicamento.observacoes,
+      observacoes: novoMedicamento.observacoes || '',
       dataInicio: novoMedicamento.dataInicio,
-      ultimaTomada: null,
-      intervalo: novoMedicamento.intervalo,
+      intervaloMinutos: novoMedicamento.intervaloMinutos,
+      ativo: novoMedicamento.ativo,
     })
     
     resetForm()
-  }, [adicionarMedicamento, novoMedicamento])
+  }, [adicionarMedicamento, novoMedicamento, resetForm])
 
   const iniciarEdicao = useCallback((id: string) => {
     const medicamento = medicamentos.find(med => med.id === id);
@@ -74,12 +131,13 @@ export function RegistroMedicamentos() {
     setEditandoId(medicamento.id)
     setNovoMedicamento({
       nome: medicamento.nome,
-      dosagem: medicamento.dosagem,
+      dosagem: medicamento.dosagem || '',
       frequencia: medicamento.frequencia,
       horarios: [...medicamento.horarios],
-      observacoes: medicamento.observacoes,
+      observacoes: medicamento.observacoes || '',
       dataInicio: medicamento.dataInicio,
-      intervalo: medicamento.intervalo || 240, // Se não tiver intervalo definido, usar 4 horas como padrão
+      intervaloMinutos: medicamento.intervaloMinutos,
+      ativo: medicamento.ativo,
     })
     setMostrarForm(true)
   }, [medicamentos])
@@ -97,16 +155,17 @@ export function RegistroMedicamentos() {
     
     atualizarMedicamento(editandoId, {
       nome: novoMedicamento.nome,
-      dosagem: novoMedicamento.dosagem,
+      dosagem: novoMedicamento.dosagem || '',
       frequencia: novoMedicamento.frequencia,
       horarios: [...novoMedicamento.horarios],
-      observacoes: novoMedicamento.observacoes,
+      observacoes: novoMedicamento.observacoes || '',
       dataInicio: novoMedicamento.dataInicio,
-      intervalo: novoMedicamento.intervalo,
+      intervaloMinutos: novoMedicamento.intervaloMinutos,
+      ativo: novoMedicamento.ativo,
     })
     
     resetForm()
-  }, [atualizarMedicamento, editandoId, novoMedicamento])
+  }, [atualizarMedicamento, editandoId, novoMedicamento, resetForm])
 
   const adicionarHorario = useCallback(() => {
     if (!novoHorario) return
@@ -133,35 +192,28 @@ export function RegistroMedicamentos() {
   }, [novoMedicamento])
 
   const handleRegistrarTomada = useCallback((id: string) => {
-    const agora = new Date().toISOString()
-    registrarTomadaMedicamento(id, agora)
-  }, [registrarTomadaMedicamento])
-
-  const resetForm = useCallback(() => {
-    setNovoMedicamento({
-      nome: '',
-      dosagem: '',
-      frequencia: 'Diária',
-      horarios: ['08:00'],
-      observacoes: '',
-      dataInicio: new Date().toISOString().split('T')[0],
-      intervalo: 240, // 4 horas por padrão
-    })
-    setEditandoId(null)
-    setMostrarForm(false)
-    setNovoHorario('08:00')
-    setErro('')
-  }, [])
+    registrarTomada(id)
+  }, [registrarTomada])
 
   // Estatísticas sobre medicamentos
   const estatisticas = useMemo(() => {
     const total = medicamentos.length
-    const tomadosHoje = medicamentos.filter(med => {
-      if (!med.ultimaTomada) return false
-      const dataUltimaTomada = med.ultimaTomada.split('T')[0]
-      const hoje = new Date().toISOString().split('T')[0]
-      return dataUltimaTomada === hoje
-    }).length
+    
+    // Contar quantos medicamentos foram tomados hoje
+    const hoje = new Date()
+    hoje.setHours(0, 0, 0, 0)
+    
+    let tomadosHoje = 0
+    Object.values(ultimasTomadas).forEach((tomada) => {
+      if (tomada) {
+        const dataTomada = new Date(tomada.dataHora)
+        dataTomada.setHours(0, 0, 0, 0)
+        
+        if (dataTomada.getTime() === hoje.getTime()) {
+          tomadosHoje++
+        }
+      }
+    })
     
     const percentualTomados = total > 0 ? Math.round((tomadosHoje / total) * 100) : 0
     
@@ -170,7 +222,7 @@ export function RegistroMedicamentos() {
       tomadosHoje,
       percentualTomados
     }
-  }, [medicamentos])
+  }, [medicamentos, ultimasTomadas])
 
   // Próxima dose calculada
   const proximaDose = useMemo(() => {
@@ -262,6 +314,22 @@ export function RegistroMedicamentos() {
 
   return (
     <div className="space-y-6">
+      {/* Alerta de erro */}
+      {error && (
+        <Alert variant="error" className="flex items-center gap-2">
+          <AlertCircle className="h-4 w-4" />
+          <span>{error}</span>
+        </Alert>
+      )}
+      
+      {/* Indicador de loading */}
+      {loading && (
+        <Alert variant="info" className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span>Sincronizando com o servidor...</span>
+        </Alert>
+      )}
+      
       <div className="flex flex-col gap-4">
         <Card className="flex-1">
           <div className="flex justify-between items-center mb-4">
@@ -274,6 +342,7 @@ export function RegistroMedicamentos() {
                 setMostrarForm(true)
               }}
               icon={<Plus className="h-4 w-4" />}
+              disabled={loading}
               aria-label="Adicionar novo medicamento"
             >
               Novo Medicamento
@@ -322,13 +391,20 @@ export function RegistroMedicamentos() {
         title={editandoId ? "Editar Medicamento" : "Novo Medicamento"}
         footer={
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={resetForm}>
+            <Button variant="outline" onClick={resetForm} disabled={loading}>
               Cancelar
             </Button>
             <Button 
               onClick={editandoId ? salvarEdicao : handleAdicionarMedicamento}
+              disabled={loading}
+              icon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : undefined}
             >
-              {editandoId ? "Salvar Alterações" : "Adicionar Medicamento"}
+              {loading 
+                ? "Salvando..." 
+                : editandoId 
+                  ? "Salvar Alterações" 
+                  : "Adicionar Medicamento"
+              }
             </Button>
           </div>
         }
@@ -363,8 +439,8 @@ export function RegistroMedicamentos() {
           />
           
           <Select
-            value={novoMedicamento.intervalo?.toString() || '240'}
-            onChange={(e) => setNovoMedicamento({ ...novoMedicamento, intervalo: parseInt(e.target.value) })}
+            value={novoMedicamento.intervaloMinutos?.toString() || '240'}
+            onChange={(e) => setNovoMedicamento({ ...novoMedicamento, intervaloMinutos: parseInt(e.target.value) })}
             label="Intervalo entre doses"
             options={opcoesIntervalo}
             helpText="Tempo mínimo recomendado entre uma dose e outra"

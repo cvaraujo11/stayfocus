@@ -14,7 +14,6 @@ import { PainelDia } from '@/app/components/inicio/PainelDia'
 import { ListaPrioridades } from '@/app/components/inicio/ListaPrioridades'
 import { LembretePausas } from '@/app/components/inicio/LembretePausas'
 import { ChecklistMedicamentos } from '@/app/components/inicio/ChecklistMedicamentos'
-import { ProximaProvaCard } from '@/app/components/inicio/ProximaProvaCard'
 import { useDashboard } from '@/app/hooks/useDashboard'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { LoadingSpinner } from '@/app/components/common/LoadingSpinner'
@@ -39,10 +38,6 @@ const ListaPrioridadesPlaceholder = () => (
 
 const LembretePausasPlaceholder = () => (
   <div className="h-40 bg-white dark:bg-gray-800 rounded-xl shadow-md animate-pulse"></div>
-)
-
-const ProximaProvaPlaceholder = () => (
-  <div className="h-32 bg-white dark:bg-gray-800 rounded-xl shadow-md animate-pulse"></div>
 )
 
 export default function HomePage() {
@@ -72,14 +67,14 @@ export default function HomePage() {
       } else {
         document.documentElement.classList.remove('text-lg')
       }
-      
+
       // Aplicar alto contraste
       if (preferenciasVisuais.altoContraste) {
         document.documentElement.classList.add('high-contrast')
       } else {
         document.documentElement.classList.remove('high-contrast')
       }
-      
+
       // Aplicar redução de estímulos
       if (preferenciasVisuais.reducaoEstimulos) {
         document.documentElement.classList.add('reduce-motion')
@@ -119,7 +114,7 @@ export default function HomePage() {
         description="Aqui está seu progresso e tarefas para hoje."
         actions={<PreferencesButton />}
       />
-      
+
       {/* Resumo rápido */}
       <DashboardSummary
         prioridadesPendentes={prioridadesPendentes}
@@ -127,7 +122,7 @@ export default function HomePage() {
         proximosCompromissos={proximosCompromissos?.length || 0}
         className="mb-8"
       />
-      
+
       <main className="pb-8">
         <DashboardSection id="painel-principal" className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Painel Visual do Dia */}
@@ -138,24 +133,24 @@ export default function HomePage() {
               </DashboardCard>
             </div>
           </SuspenseWrapper>
-          
+
           {/* Lista de Prioridades */}
           <SuspenseWrapper fallback={<ListaPrioridadesPlaceholder />}>
             <div>
-              <DashboardCard 
+              <DashboardCard
                 title="Prioridades do Dia"
                 className="h-full"
               >
                 <div className="space-y-6">
                   <ListaPrioridades />
-                  
+
                   {/* Separador */}
-                  <div 
-                    role="separator" 
-                    className="border-t border-gray-200 dark:border-gray-700 my-2" 
+                  <div
+                    role="separator"
+                    className="border-t border-gray-200 dark:border-gray-700 my-2"
                     aria-hidden="true"
                   ></div>
-                  
+
                   {/* Checklist de Medicamentos Diários */}
                   <ChecklistMedicamentos />
                 </div>
@@ -163,31 +158,19 @@ export default function HomePage() {
             </div>
           </SuspenseWrapper>
         </DashboardSection>
-        
-        {/* Lembretes de Pausas e Próximas Provas */}
+
+        {/* Lembretes de Pausas */}
         {mostrarPausas && (
-          <DashboardSection id="pausas-provas" className="mt-8 space-y-6">
+          <DashboardSection id="pausas" className="mt-8 space-y-6">
             <SuspenseWrapper fallback={<LembretePausasPlaceholder />}>
               <LembretePausas />
             </SuspenseWrapper>
-
-            <SuspenseWrapper fallback={<ProximaProvaPlaceholder />}>
-              <ProximaProvaCard />
-            </SuspenseWrapper>
           </DashboardSection>
         )}
-        
+
         {/* Links Rápidos */}
         <DashboardSection id="links-rapidos" title="Acesso Rápido" className="mt-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Link href="/estudos" className={cn(
-              buttonVariants({ variant: "outline" }),
-              "flex flex-col items-center justify-center h-24 p-4 text-estudos-primary hover:bg-estudos-light hover:border-estudos-primary"
-            )}>
-              <span className="text-sm font-medium">Estudos</span>
-              <span className="text-xs mt-1 text-gray-500">Materiais e Técnicas</span>
-            </Link>
-            
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Link href="/saude" className={cn(
               buttonVariants({ variant: "outline" }),
               "flex flex-col items-center justify-center h-24 p-4 text-saude-primary hover:bg-saude-light hover:border-saude-primary"
@@ -195,7 +178,7 @@ export default function HomePage() {
               <span className="text-sm font-medium">Saúde</span>
               <span className="text-xs mt-1 text-gray-500">Medicamentos e Bem-estar</span>
             </Link>
-            
+
             <Link href="/hiperfocos" className={cn(
               buttonVariants({ variant: "outline" }),
               "flex flex-col items-center justify-center h-24 p-4 text-hiperfocos-primary hover:bg-hiperfocos-light hover:border-hiperfocos-primary"
@@ -203,7 +186,7 @@ export default function HomePage() {
               <span className="text-sm font-medium">Hiperfocos</span>
               <span className="text-xs mt-1 text-gray-500">Projetos e Interesses</span>
             </Link>
-            
+
             <Link href="/lazer" className={cn(
               buttonVariants({ variant: "outline" }),
               "flex flex-col items-center justify-center h-24 p-4 text-lazer-primary hover:bg-lazer-light hover:border-lazer-primary"

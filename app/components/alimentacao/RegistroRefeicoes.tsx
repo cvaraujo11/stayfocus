@@ -38,12 +38,12 @@ export function RegistroRefeicoes() {
 
   // Setup real-time sync
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       const cleanup = setupRealtimeSync(user.id)
       return cleanup
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
+  }, [user?.id])
 
   const handleAdicionarRegistro = async () => {
     if (!novoRegistro.hora || !novoRegistro.descricao) return

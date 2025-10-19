@@ -28,12 +28,12 @@ export default function ReceitasPage() {
 
   // Setup real-time sync (separado para evitar loops)
   useEffect(() => {
-    if (user) {
+    if (user?.id) {
       const cleanup = setupRealtimeSync(user.id);
       return cleanup;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user?.id]);
 
   const receitasFiltradas = receitas
     .filter(receita =>
