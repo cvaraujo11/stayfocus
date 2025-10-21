@@ -179,6 +179,47 @@ export default function LoginPage() {
             </p>
           </div>
         </Card>
+
+        {/* Novidades - Changelog */}
+        <Card className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+          <div className="flex items-start gap-3">
+            <div className="flex-shrink-0">
+              <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-blue-900 dark:text-blue-100 mb-2">
+                Confira as últimas novidades e melhorias do StayFocus
+              </p>
+              <Link href="/changelog">
+                <Button variant="outline" size="sm" className="w-full border-blue-300 dark:border-blue-700 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40">
+                  Ver Changelog
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </Card>
+
+        {/* Links Legais */}
+        <div className="mt-6 text-center space-y-2">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Ao fazer login, você concorda com nossos{' '}
+            <Link
+              href="/termos-de-uso"
+              className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline"
+            >
+              Termos de Uso
+            </Link>
+            {' '}e{' '}
+            <Link
+              href="/politica-de-privacidade"
+              className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline"
+            >
+              Política de Privacidade
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )

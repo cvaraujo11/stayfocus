@@ -1,0 +1,30 @@
+# robots.txt para StayFocus
+# Bloquear rotas privadas e permitir rotas públicas
+
+User-agent: *
+
+# Rotas permitidas (públicas)
+Allow: /
+Allow: /login
+Allow: /registro
+Allow: /roadmap
+
+# Rotas bloqueadas (privadas/autenticadas)
+Disallow: /perfil
+Disallow: /auth
+Disallow: /alimentacao
+Disallow: /autoconhecimento
+Disallow: /financas
+Disallow: /hiperfocos
+Disallow: /lazer
+Disallow: /receitas
+Disallow: /saude
+Disallow: /sono
+
+# Bloquear arquivos e diretórios técnicos
+Disallow: /api/
+Disallow: /_next/
+Disallow: /static/
+
+# Referência ao sitemap
+Sitemap: https://seu-dominio.com/sitemap.xml

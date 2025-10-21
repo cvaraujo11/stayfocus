@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Camera, Plus, X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import { useAlimentacaoStore } from '@/app/stores/alimentacaoStore'
 import { useAuth } from '@/app/contexts/AuthContext'
 import { LoadingSpinner } from '@/app/components/common/LoadingSpinner'
@@ -22,11 +22,9 @@ export function RegistroRefeicoes() {
   const [novoRegistro, setNovoRegistro] = useState({
     hora: '',
     descricao: '',
-    foto: null as File | null,
   })
   const [mostrarForm, setMostrarForm] = useState(false)
-  const [fotoPreview, setFotoPreview] = useState<string | null>(null)
-  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
 
   // Load data on mount
   useEffect(() => {
@@ -48,51 +46,23 @@ export function RegistroRefeicoes() {
   const handleAdicionarRegistro = async () => {
     if (!novoRegistro.hora || !novoRegistro.descricao) return
 
-    setUploading(true)
+    setSaving(true)
     try {
       await adicionarRegistro(
         novoRegistro.descricao,
-        novoRegistro.hora,
-        novoRegistro.foto
+        novoRegistro.hora
       )
 
       setNovoRegistro({
         hora: '',
         descricao: '',
-        foto: null,
       })
-      setFotoPreview(null)
       setMostrarForm(false)
     } catch (error) {
       console.error('Error adding registro:', error)
     } finally {
-      setUploading(false)
+      setSaving(false)
     }
-  }
-
-  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setNovoRegistro({
-        ...novoRegistro,
-        foto: file,
-      })
-
-      // Create preview
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        setFotoPreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const handleRemoverFoto = () => {
-    setNovoRegistro({
-      ...novoRegistro,
-      foto: null,
-    })
-    setFotoPreview(null)
   }
 
   const handleRemoverRegistro = async (id: string) => {
@@ -159,15 +129,6 @@ export function RegistroRefeicoes() {
                 </button>
               </div>
 
-              {registro.foto_url && (
-                <div className="mt-2">
-                  <img
-                    src={registro.foto_url}
-                    alt="Foto da refeição"
-                    className="w-full h-48 object-cover rounded-md"
-                  />
-                </div>
-              )}
             </div>
           ))}
         </div>
@@ -182,12 +143,11 @@ export function RegistroRefeicoes() {
             <button
               onClick={() => {
                 setMostrarForm(false)
-                setNovoRegistro({ hora: '', descricao: '', foto: null })
-                setFotoPreview(null)
+                setNovoRegistro({ hora: '', descricao: '' })
               }}
               className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
               aria-label="Fechar formulário"
-              disabled={uploading}
+              disabled={saving}
             >
               <X className="h-5 w-5" />
             </button>
@@ -201,7 +161,7 @@ export function RegistroRefeicoes() {
                 onChange={(e) => setNovoRegistro({ ...novoRegistro, hora: e.target.value })}
                 className="w-full sm:w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                 aria-label="Horário da refeição"
-                disabled={uploading}
+                disabled={saving}
               />
               <input
                 type="text"
@@ -210,69 +170,29 @@ export function RegistroRefeicoes() {
                 className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg dark:bg-gray-700 dark:text-white"
                 placeholder="Descrição da refeição"
                 aria-label="Descrição da refeição"
-                disabled={uploading}
+                disabled={saving}
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Foto da Refeição (opcional)
-              </label>
-              <div className="flex items-center gap-2">
-                <label className="flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer">
-                  <Camera className="h-5 w-5 mr-2" />
-                  <span>Escolher Foto</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFotoChange}
-                    className="hidden"
-                    disabled={uploading}
-                  />
-                </label>
-                {fotoPreview && (
-                  <button
-                    onClick={handleRemoverFoto}
-                    className="px-3 py-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
-                    aria-label="Remover foto"
-                    disabled={uploading}
-                  >
-                    <X className="h-5 w-5" />
-                  </button>
-                )}
-              </div>
-
-              {fotoPreview && (
-                <div className="mt-2 relative">
-                  <img
-                    src={fotoPreview}
-                    alt="Prévia da foto"
-                    className="w-full h-48 object-cover rounded-md"
-                  />
-                </div>
-              )}
             </div>
 
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => {
                   setMostrarForm(false)
-                  setNovoRegistro({ hora: '', descricao: '', foto: null })
-                  setFotoPreview(null)
+                  setNovoRegistro({ hora: '', descricao: '' })
                 }}
                 className="px-4 py-2 bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
-                disabled={uploading}
+                disabled={saving}
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAdicionarRegistro}
-                disabled={!novoRegistro.hora || !novoRegistro.descricao || uploading}
+                disabled={!novoRegistro.hora || !novoRegistro.descricao || saving}
                 className="px-4 py-2 bg-alimentacao-primary text-white rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 aria-label="Salvar registro"
               >
-                {uploading && <LoadingSpinner size="sm" />}
-                {uploading ? 'Salvando...' : 'Salvar Registro'}
+                {saving && <LoadingSpinner size="sm" />}
+                {saving ? 'Salvando...' : 'Salvar Registro'}
               </button>
             </div>
           </div>

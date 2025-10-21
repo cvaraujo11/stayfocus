@@ -259,6 +259,26 @@ export default function RegistroPage() {
             </>
           )}
         </Card>
+
+        {/* Links Legais */}
+        <div className="mt-6 text-center space-y-2">
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            Ao criar uma conta, você concorda com nossos{' '}
+            <Link
+              href="/termos-de-uso"
+              className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline"
+            >
+              Termos de Uso
+            </Link>
+            {' '}e{' '}
+            <Link
+              href="/politica-de-privacidade"
+              className="text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 underline"
+            >
+              Política de Privacidade
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   )

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Utensils, Book, Heart, Smile, DollarSign, Rocket, X } from 'lucide-react'
+import { Home, Utensils, Book, BookOpen, Heart, Smile, DollarSign, Rocket, X } from 'lucide-react'
 import { NavItem } from '@/app/types'
 
 const navItems: NavItem[] = [
@@ -26,6 +26,13 @@ const navItems: NavItem[] = [
     icon: Book,
     color: 'text-blue-600',
     activeColor: 'bg-blue-100',
+  },
+  {
+    name: 'Estudos',
+    href: '/estudos',
+    icon: BookOpen,
+    color: 'text-purple-600',
+    activeColor: 'bg-purple-100',
   },
   {
     name: 'Saúde',

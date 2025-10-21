@@ -1,6 +1,5 @@
 import { create } from 'zustand'
 import { supabase } from '@/app/lib/supabase/client'
-import { uploadPhoto, deletePhoto } from '@/app/lib/supabase/storage'
 import { supabaseSync } from '@/app/lib/supabase/sync'
 import type { Database } from '@/app/types/database'
 
@@ -59,8 +58,8 @@ type AlimentacaoState = {
   loading: boolean
   error: string | null
   carregarRefeicoes: (userId: string, dataInicio?: string, dataFim?: string) => Promise<void>
-  adicionarRegistro: (descricao: string, hora: string, foto?: File | null, data?: string) => Promise<void>
-  atualizarRegistro: (id: string, descricao?: string, hora?: string, foto?: File | null) => Promise<void>
+  adicionarRegistro: (descricao: string, hora: string, data?: string) => Promise<void>
+  atualizarRegistro: (id: string, descricao?: string, hora?: string) => Promise<void>
   removerRegistro: (id: string) => Promise<void>
   setupRealtimeSync: (userId: string) => () => void
   
@@ -285,26 +284,12 @@ export const useAlimentacaoStore = create<AlimentacaoState>((set, get) => ({
     }
   },
   
-  adicionarRegistro: async (descricao: string, hora: string, foto?: File | null, data?: string) => {
+  adicionarRegistro: async (descricao: string, hora: string, data?: string) => {
     set({ loading: true, error: null })
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         throw new Error('Usuário não autenticado')
-      }
-      
-      // Upload photo if provided
-      let foto_url: string | null = null
-      if (foto) {
-        try {
-          foto_url = await uploadPhoto(user.id, foto)
-          if (!foto_url) {
-            throw new Error('Erro ao fazer upload da foto')
-          }
-        } catch (uploadError) {
-          console.error('Photo upload error:', uploadError)
-          throw new Error(uploadError instanceof Error ? uploadError.message : 'Erro ao fazer upload da foto')
-        }
       }
       
       // Use provided date or today's date
@@ -315,7 +300,7 @@ export const useAlimentacaoStore = create<AlimentacaoState>((set, get) => ({
         data: dataRefeicao,
         hora,
         descricao,
-        foto_url,
+        foto_url: null,
       }
       
       const { data: inserted, error } = await supabase
@@ -341,7 +326,7 @@ export const useAlimentacaoStore = create<AlimentacaoState>((set, get) => ({
     }
   },
   
-  atualizarRegistro: async (id: string, descricao?: string, hora?: string, foto?: File | null) => {
+  atualizarRegistro: async (id: string, descricao?: string, hora?: string) => {
     set({ loading: true, error: null })
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -349,41 +334,9 @@ export const useAlimentacaoStore = create<AlimentacaoState>((set, get) => ({
         throw new Error('Usuário não autenticado')
       }
       
-      // Get current registro to check for existing photo
-      const currentRegistro = get().registros.find(r => r.id === id)
-      
-      // Handle photo update
-      let foto_url: string | null | undefined = undefined
-      if (foto !== undefined) {
-        if (foto === null) {
-          // Delete existing photo if removing
-          if (currentRegistro?.foto_url) {
-            await deletePhoto(currentRegistro.foto_url)
-          }
-          foto_url = null
-        } else {
-          // Upload new photo
-          try {
-            // Delete old photo first
-            if (currentRegistro?.foto_url) {
-              await deletePhoto(currentRegistro.foto_url)
-            }
-            
-            foto_url = await uploadPhoto(user.id, foto)
-            if (!foto_url) {
-              throw new Error('Erro ao fazer upload da foto')
-            }
-          } catch (uploadError) {
-            console.error('Photo upload error:', uploadError)
-            throw new Error(uploadError instanceof Error ? uploadError.message : 'Erro ao fazer upload da foto')
-          }
-        }
-      }
-      
       const updates: AlimentacaoRefeicaoUpdate = {}
       if (descricao !== undefined) updates.descricao = descricao
       if (hora !== undefined) updates.hora = hora
-      if (foto_url !== undefined) updates.foto_url = foto_url
       
       const { data: updated, error } = await supabase
         .from('alimentacao_refeicoes')
@@ -420,9 +373,6 @@ export const useAlimentacaoStore = create<AlimentacaoState>((set, get) => ({
         throw new Error('Usuário não autenticado')
       }
       
-      // Get registro to delete photo
-      const registro = get().registros.find(r => r.id === id)
-      
       // Delete from database
       const { error } = await supabase
         .from('alimentacao_refeicoes')
@@ -431,11 +381,6 @@ export const useAlimentacaoStore = create<AlimentacaoState>((set, get) => ({
         .eq('user_id', user.id)
       
       if (error) throw error
-      
-      // Delete photo if exists
-      if (registro?.foto_url) {
-        await deletePhoto(registro.foto_url)
-      }
       
       // Remove from local state
       set((state) => ({

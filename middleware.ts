@@ -73,7 +73,7 @@ export async function middleware(req: NextRequest) {
   console.log('🔒 Middleware:', { pathname, hasSession: !!session, email: session?.user?.email })
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/login', '/registro', '/auth/callback']
+  const publicRoutes = ['/login', '/registro', '/auth/callback', '/termos-de-uso', '/politica-de-privacidade', '/changelog']
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
   // If user is authenticated and trying to access login/registro, redirect to dashboard

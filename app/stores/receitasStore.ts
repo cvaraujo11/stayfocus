@@ -1,7 +1,6 @@
 // stores/receitasStore.ts
 import { create } from 'zustand';
 import { supabase } from '@/app/lib/supabase/client';
-import { uploadPhoto, deletePhoto } from '@/app/lib/supabase/storage';
 import { supabaseSync } from '@/app/lib/supabase/sync';
 import type { Database } from '@/app/types/database';
 
@@ -57,8 +56,8 @@ interface ReceitasStore {
   
   // Receitas Actions
   carregarReceitas: (userId: string) => Promise<void>;
-  adicionarReceita: (receita: Omit<Receita, 'id' | 'favorita'>, foto?: File) => Promise<void>;
-  atualizarReceita: (id: string, updates: Partial<Omit<Receita, 'id'>>, novaFoto?: File) => Promise<void>;
+  adicionarReceita: (receita: Omit<Receita, 'id' | 'favorita'>) => Promise<void>;
+  atualizarReceita: (id: string, updates: Partial<Omit<Receita, 'id'>>) => Promise<void>;
   removerReceita: (id: string) => Promise<void>;
   marcarFavorita: (id: string, favorita: boolean) => Promise<void>;
   obterReceitaPorId: (id: string) => Receita | undefined;
@@ -154,20 +153,14 @@ export const useReceitasStore = create<ReceitasStore>((set, get) => ({
   },
   
   // Add new receita
-  adicionarReceita: async (receita, foto) => {
+  adicionarReceita: async (receita: Omit<Receita, 'id' | 'favorita'>) => {
     set({ loading: true, error: null });
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
       
-      // Upload photo if provided
-      let fotoUrl: string | null = null;
-      if (foto) {
-        fotoUrl = await uploadPhoto(user.id, foto);
-      }
-      
-      // Insert receita
-      const receitaData = mapReceitaToDB(receita, user.id, fotoUrl);
+      // Insert receita without photo
+      const receitaData = mapReceitaToDB(receita, user.id, null);
       const { data, error } = await supabase
         .from('receitas')
         .insert(receitaData)
@@ -192,7 +185,7 @@ export const useReceitasStore = create<ReceitasStore>((set, get) => ({
   },
   
   // Update receita
-  atualizarReceita: async (id, updates, novaFoto) => {
+  atualizarReceita: async (id: string, updates: Partial<Omit<Receita, 'id'>>) => {
     set({ loading: true, error: null });
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -200,17 +193,6 @@ export const useReceitasStore = create<ReceitasStore>((set, get) => ({
       
       const receitaAtual = get().receitas.find(r => r.id === id);
       if (!receitaAtual) throw new Error('Receita não encontrada');
-      
-      // Handle photo update
-      let fotoUrl = receitaAtual.imagem;
-      if (novaFoto) {
-        // Delete old photo if exists
-        if (fotoUrl) {
-          await deletePhoto(fotoUrl);
-        }
-        // Upload new photo
-        fotoUrl = await uploadPhoto(user.id, novaFoto);
-      }
       
       // Prepare update data
       const updateData: ReceitaUpdate = {};
@@ -222,7 +204,6 @@ export const useReceitasStore = create<ReceitasStore>((set, get) => ({
       if (updates.tempoPreparo !== undefined) updateData.tempo_preparo_minutos = updates.tempoPreparo;
       if (updates.porcoes !== undefined) updateData.porcoes = updates.porcoes;
       if (updates.categorias !== undefined) updateData.categoria = updates.categorias[0] || null;
-      if (novaFoto) updateData.foto_url = fotoUrl;
       if (updates.favorita !== undefined) updateData.favorita = updates.favorita;
       
       const { data, error } = await supabase
@@ -256,13 +237,6 @@ export const useReceitasStore = create<ReceitasStore>((set, get) => ({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Usuário não autenticado');
-      
-      const receita = get().receitas.find(r => r.id === id);
-      
-      // Delete photo if exists
-      if (receita?.imagem) {
-        await deletePhoto(receita.imagem);
-      }
       
       const { error } = await supabase
         .from('receitas')

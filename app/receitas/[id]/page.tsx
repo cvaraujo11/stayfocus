@@ -1,15 +1,22 @@
-import { DetalhesReceita } from '../../components/receitas/DetalhesReceita';
+import { DetalhesReceita } from '../../components/receitas/DetalhesReceita'
+import { BackButton } from '../../components/common/BackButton'
 
 interface ReceitaDetalhesPageProps {
   params: {
-    id: string;
-  };
+    id: string
+  }
 }
 
 // This page will be dynamically rendered based on the [id] parameter
 export default function ReceitaDetalhesPage({ params }: ReceitaDetalhesPageProps) {
-  // The DetalhesReceita component handles fetching the recipe data using the id
-  return <DetalhesReceita id={params.id} />;
+  return (
+    <div>
+      <div className="container mx-auto px-4 py-4">
+        <BackButton href="/receitas" />
+      </div>
+      <DetalhesReceita id={params.id} />
+    </div>
+  )
 }
 
 // Optional: Add generateStaticParams if you want to pre-render some recipe pages at build time

@@ -46,8 +46,6 @@ export function AdicionarReceitaForm({ receitaParaEditar, aoFinalizar }: Adicion
   };
 
   const [receita, setReceita] = useState<ReceitaFormState>(initialState);
-  const [previewImagem, setPreviewImagem] = useState<string | null>(receitaParaEditar?.imagem || null);
-  const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   // Populate form if editing
@@ -67,10 +65,8 @@ export function AdicionarReceitaForm({ receitaParaEditar, aoFinalizar }: Adicion
         categorias: receitaParaEditar.categorias || [],
         tags: receitaParaEditar.tags || [],
       });
-      setPreviewImagem(receitaParaEditar.imagem || null);
     } else {
       setReceita(initialState); // Reset form if not editing
-      setPreviewImagem(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [receitaParaEditar, editando]); // Rerun effect if receitaParaEditar changes
@@ -141,25 +137,7 @@ export function AdicionarReceitaForm({ receitaParaEditar, aoFinalizar }: Adicion
     atualizarCampo('passos', novosPassos);
   };
 
-  // --- Image Handler ---
-  const handleImagemChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      // Store file for upload
-      setFotoFile(file);
 
-      // Create preview
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const result = reader.result as string;
-        setPreviewImagem(result);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      setFotoFile(null);
-      setPreviewImagem(null);
-    }
-  };
 
   // --- Form Submission ---
   const salvarReceita = async (e: FormEvent) => {
@@ -197,7 +175,7 @@ export function AdicionarReceitaForm({ receitaParaEditar, aoFinalizar }: Adicion
       };
 
       if (editando && receitaParaEditar) {
-        await atualizarReceita(receitaParaEditar.id, receitaData, fotoFile || undefined);
+        await atualizarReceita(receitaParaEditar.id, receitaData);
         alert('Receita atualizada com sucesso!');
 
         if (aoFinalizar) {
@@ -206,7 +184,7 @@ export function AdicionarReceitaForm({ receitaParaEditar, aoFinalizar }: Adicion
           router.push(`/receitas/${receitaParaEditar.id}`);
         }
       } else {
-        await adicionarReceita(receitaData, fotoFile || undefined);
+        await adicionarReceita(receitaData);
         alert('Receita adicionada com sucesso!');
 
         if (aoFinalizar) {
@@ -350,39 +328,7 @@ export function AdicionarReceitaForm({ receitaParaEditar, aoFinalizar }: Adicion
         </div>
       </section>
 
-      {/* Image Section */}
-      <section className="space-y-4">
-        <h2 className="text-xl font-semibold">Imagem da Receita</h2>
-        <div>
-          <label htmlFor="imagem" className="block mb-2 font-medium text-sm">Carregar Imagem</label>
-          <Input
-            id="imagem"
-            type="file"
-            accept="image/*"
-            onChange={handleImagemChange}
-            className="file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
-          />
-          {previewImagem && (
-            <div className="mt-4 relative h-48 w-full max-w-sm border rounded overflow-hidden">
-              <img
-                src={previewImagem}
-                alt="Preview da Receita"
-                className="w-full h-full object-cover"
-              />
-              <Button
-                type="button"
-                onClick={() => { setPreviewImagem(null); atualizarCampo('imagem', ''); }}
-                variant="danger"
-                size="sm"
-                className="absolute top-2 right-2 !p-1"
-                aria-label="Remover imagem"
-              >
-                X
-              </Button>
-            </div>
-          )}
-        </div>
-      </section>
+
 
       {/* Ingredients Section */}
       <section className="space-y-4">

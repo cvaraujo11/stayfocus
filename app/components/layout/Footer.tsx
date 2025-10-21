@@ -18,24 +18,33 @@ export function Footer() {
             </p>
           </div>
           
-          <Link 
-            href="https://github.com/cvaraujo12/stayfocus"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-            aria-label="GitHub repository"
-          >
-            <div className="flex items-center space-x-2">
-              <Image
-                src="/images/cat-icon.svg"
-                alt="GitHub"
-                width={24}
-                height={24}
-                className="text-current"
-              />
-              <span className="text-xs">StayFocus GitHub</span>
-            </div>
-          </Link>
+          <div className="flex items-center gap-6">
+            <Link 
+              href="/changelog"
+              className="text-sm text-gray-600 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+            >
+              Changelog
+            </Link>
+            
+            <Link 
+              href="ops"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-700 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              aria-label="GitHub repository"
+            >
+              <div className="flex items-center space-x-2">
+                <Image
+                  src="/images/cat-icon.svg"
+                  alt="GitHub"
+                  width={24}
+                  height={24}
+                  className="text-current"
+                />
+                <span className="text-xs">StayFocus GitHub</span>
+              </div>
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
