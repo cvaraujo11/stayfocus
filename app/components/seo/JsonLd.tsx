@@ -21,7 +21,7 @@ export const webApplicationSchema = {
   name: 'StayFocus',
   description:
     'Aplicativo de organização e produtividade desenvolvido especialmente para pessoas neurodivergentes com TDAH e autismo.',
-  url: process.env.NEXT_PUBLIC_BASE_URL || 'https://seu-dominio.com',
+  url: process.env.NEXT_PUBLIC_BASE_URL || 'https://stayfocus-alpha.vercel.app',
   applicationCategory: 'ProductivityApplication',
   operatingSystem: 'Web',
   offers: {
@@ -47,8 +47,8 @@ export const organizationSchema = {
   name: 'StayFocus',
   description:
     'Desenvolvemos ferramentas de organização e produtividade para pessoas neurodivergentes.',
-  url: process.env.NEXT_PUBLIC_BASE_URL || 'https://seu-dominio.com',
-  logo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://seu-dominio.com'}/images/stayfocus_logo.png`,
+  url: process.env.NEXT_PUBLIC_BASE_URL || 'https://stayfocus-alpha.vercel.app',
+  logo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://stayfocus-alpha.vercel.app'}/images/stayfocus_logo.png`,
   sameAs: [
     // Adicione aqui links para redes sociais quando disponíveis
     // 'https://twitter.com/stayfocus',

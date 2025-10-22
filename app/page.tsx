@@ -128,7 +128,10 @@ export default function HomePage() {
           {/* Painel Visual do Dia */}
           <SuspenseWrapper fallback={<PainelDiaPlaceholder />}>
             <div className="md:col-span-2">
-              <DashboardCard title="Painel do Dia">
+              <DashboardCard 
+                title="Painel do Dia"
+                collapsible={true}
+              >
                 <PainelDia />
               </DashboardCard>
             </div>
@@ -140,6 +143,7 @@ export default function HomePage() {
               <DashboardCard
                 title="Prioridades do Dia"
                 className="h-full"
+                collapsible={true}
               >
                 <div className="space-y-6">
                   <ListaPrioridades />
@@ -161,7 +165,12 @@ export default function HomePage() {
 
         {/* Lembretes de Pausas */}
         {mostrarPausas && (
-          <DashboardSection id="pausas" className="mt-8 space-y-6">
+          <DashboardSection 
+            id="pausas" 
+            title="Lembretes de Pausas"
+            className="mt-8 space-y-6"
+            collapsible={true}
+          >
             <SuspenseWrapper fallback={<LembretePausasPlaceholder />}>
               <LembretePausas />
             </SuspenseWrapper>
@@ -169,7 +178,12 @@ export default function HomePage() {
         )}
 
         {/* Links Rápidos */}
-        <DashboardSection id="links-rapidos" title="Acesso Rápido" className="mt-8">
+        <DashboardSection 
+          id="links-rapidos" 
+          title="Acesso Rápido" 
+          className="mt-8"
+          collapsible={true}
+        >
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <Link href="/saude" className={cn(
               buttonVariants({ variant: "outline" }),

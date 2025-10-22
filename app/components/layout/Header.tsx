@@ -118,10 +118,10 @@ export function Header() {
             </button>
 
             {/* Help button */}
-            <Link href="/roadmap">
+            <Link href="/changelog">
               <button
                 className="p-2 rounded-full text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                aria-label="Roadmap e Ajuda"
+                aria-label="Changelog e Novidades"
               >
                 {mounted ? <HelpCircle className="h-5 w-5" aria-hidden="true" /> : <div className="h-5 w-5" />}
               </button>

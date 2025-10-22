@@ -27,4 +27,4 @@ Disallow: /_next/
 Disallow: /static/
 
 # Referência ao sitemap
-Sitemap: https://seu-dominio.com/sitemap.xml
+Sitemap: https://stayfocus-alpha.vercel.app/sitemap.xml

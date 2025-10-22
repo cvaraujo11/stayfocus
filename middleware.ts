@@ -63,28 +63,28 @@ export async function middleware(req: NextRequest) {
     }
   )
 
-  // Refresh session if expired
+  // Validate session authenticity
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { pathname } = req.nextUrl
 
-  console.log('🔒 Middleware:', { pathname, hasSession: !!session, email: session?.user?.email })
+  console.log('🔒 Middleware:', { pathname, hasUser: !!user, email: user?.email })
 
   // Public routes that don't require authentication
   const publicRoutes = ['/login', '/registro', '/auth/callback', '/termos-de-uso', '/politica-de-privacidade', '/changelog']
   const isPublicRoute = publicRoutes.some((route) => pathname.startsWith(route))
 
   // If user is authenticated and trying to access login/registro, redirect to dashboard
-  if (session && isPublicRoute && pathname !== '/auth/callback') {
+  if (user && isPublicRoute && pathname !== '/auth/callback') {
     console.log('🔒 Middleware: Redirecionando usuário autenticado para /')
     const redirectUrl = new URL('/', req.url)
     return NextResponse.redirect(redirectUrl)
   }
 
   // If user is not authenticated and trying to access protected route, redirect to login
-  if (!session && !isPublicRoute) {
+  if (!user && !isPublicRoute) {
     console.log('🔒 Middleware: Redirecionando usuário não autenticado para /login')
     const redirectUrl = new URL('/login', req.url)
     // Store the original URL to redirect back after login

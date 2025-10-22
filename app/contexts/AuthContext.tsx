@@ -26,30 +26,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const supabase = createSupabaseClient()
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session)
-      setUser(session?.user ?? null)
-      setLoading(false)
+    // Get initial user (secure - validates with server)
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user)
+      // Get session after validating user
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session)
+        setLoading(false)
+      })
     })
 
     // Listen for auth changes
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      // Apenas atualizar se o user ID realmente mudou (evita re-renders desnecessários)
-      setSession((prevSession) => {
-        if (prevSession?.user?.id === session?.user?.id) {
-          return prevSession
-        }
-        return session
-      })
-      setUser((prevUser) => {
-        if (prevUser?.id === session?.user?.id) {
-          return prevUser
-        }
-        return session?.user ?? null
-      })
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // For auth state changes, validate the user
+      if (session) {
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+        setSession(session)
+      } else {
+        setUser(null)
+        setSession(null)
+      }
       setLoading(false)
     })
 

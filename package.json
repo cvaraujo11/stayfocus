@@ -11,7 +11,10 @@
     "analyze": "set ANALYZE=true&& npm run build",
     "test:e2e": "tsx tests/index.ts",
     "test:e2e:suite": "tsx tests/index.ts --suite",
-    "test:e2e:verbose": "tsx tests/index.ts --verbose"
+    "test:e2e:verbose": "tsx tests/index.ts --verbose",
+    "security:check": "bash scripts/security-check.sh",
+    "security:audit": "npm audit --audit-level=moderate",
+    "prebuild": "npm run typecheck"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.17",
@@ -20,6 +23,7 @@
     "@supabase/supabase-js": "^2.75.1",
     "@types/node-fetch": "^2.6.12",
     "@types/stream-buffers": "^3.0.7",
+    "@vercel/analytics": "^1.5.0",
     "@vercel/speed-insights": "^1.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

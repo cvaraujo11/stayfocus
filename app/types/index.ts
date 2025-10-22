@@ -63,6 +63,8 @@ export type DashboardCardProps = {
   title?: string
   className?: string
   isLoading?: boolean
+  collapsible?: boolean
+  defaultCollapsed?: boolean
 }
 
 export type DashboardSectionProps = {
@@ -70,6 +72,8 @@ export type DashboardSectionProps = {
   title?: string
   children: React.ReactNode
   className?: string
+  collapsible?: boolean
+  defaultCollapsed?: boolean
 }
 
 // Tipos para componentes de Suspense do Dashboard

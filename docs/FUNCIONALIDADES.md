@@ -444,6 +444,77 @@ Nunca esqueça itens no mercado:
 
 ---
 
+## 🗄️ Infraestrutura e Tecnologia
+
+### Integração com Supabase
+O StayFocus utiliza o Supabase como backend completo, oferecendo:
+
+#### Banco de Dados PostgreSQL
+- **Armazenamento robusto** - Todos os seus dados em um banco relacional confiável
+- **Consultas otimizadas** - Performance rápida mesmo com grandes volumes de dados
+- **Relacionamentos complexos** - Estrutura de dados que conecta todas as funcionalidades
+- **Backup automático** - Seus dados sempre protegidos
+
+#### Autenticação e Segurança
+- **Supabase Auth** - Sistema de autenticação enterprise-grade
+- **OAuth integrado** - Login com Google de forma segura
+- **Row Level Security (RLS)** - Cada usuário acessa apenas seus próprios dados
+- **Políticas de segurança** - Proteção em nível de banco de dados
+- **JWT tokens** - Sessões seguras e criptografadas
+
+#### Recursos em Tempo Real
+- **Sincronização instantânea** - Atualizações refletidas imediatamente
+- **Subscriptions** - Notificações em tempo real de mudanças nos dados
+- **Offline-first** - Continue usando mesmo sem conexão (em desenvolvimento)
+
+#### Storage
+- **Armazenamento de arquivos** - Para futuras funcionalidades de anexos
+- **Otimização de imagens** - Carregamento rápido e eficiente
+- **CDN global** - Acesso rápido de qualquer lugar do mundo
+
+#### APIs RESTful e GraphQL
+- **APIs automáticas** - Geradas automaticamente a partir do schema do banco
+- **Documentação interativa** - Facilita integrações futuras
+- **Queries otimizadas** - Busque apenas os dados necessários
+
+### Vantagens Técnicas
+- **Escalabilidade** - Cresce conforme a base de usuários aumenta
+- **Alta disponibilidade** - 99.9% de uptime garantido
+- **Performance** - Respostas rápidas mesmo com muitos usuários simultâneos
+- **Manutenção simplificada** - Atualizações sem downtime
+
+---
+
+## 💚 Apoie o Projeto
+
+### StayFocus é Gratuito e Sempre Será
+O StayFocus nasceu da necessidade real de pessoas com TDAH e neurodivergências. Nosso compromisso é manter a plataforma:
+
+- ✅ **100% Gratuita** - Sem planos pagos ou paywalls
+- ✅ **Sem Anúncios** - Experiência limpa e sem distrações
+- ✅ **Código Aberto** - Transparência total no desenvolvimento
+- ✅ **Focada no Usuário** - Decisões baseadas em necessidades reais, não em lucro
+
+### Como Você Pode Ajudar
+Manter o StayFocus no ar tem custos reais:
+- Hospedagem e infraestrutura (Supabase, Vercel)
+- Domínio e serviços
+- Tempo de desenvolvimento e manutenção
+- Implementação de novas funcionalidades
+
+**Contribua com o projeto:**
+🔗 [Vaquinha StayFocus - Gratuidade](https://www.vakinha.com.br/vaquinha/stayfocus-gratuidade)
+
+Qualquer valor ajuda a manter o projeto vivo e em constante evolução. Sua contribuição garante que o StayFocus continue sendo uma ferramenta acessível para toda a comunidade neurodivergente.
+
+### Outras Formas de Apoiar
+- ⭐ **Compartilhe** - Indique para amigos que possam se beneficiar
+- 💬 **Feedback** - Suas sugestões moldam o desenvolvimento
+- 🐛 **Reporte bugs** - Ajude a melhorar a experiência de todos
+- 📝 **Contribua** - Desenvolvedores são bem-vindos no projeto
+
+---
+
 ## 🚀 Diferenciais do StayFocus
 
 ### 1. **Tudo em Um Lugar**

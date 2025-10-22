@@ -4,10 +4,11 @@ import { Header } from '@/app/components/layout/Header'
 import { Footer } from '@/app/components/layout/Footer'
 import { Providers } from '@/app/providers'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Analytics } from '@vercel/analytics/next'
 import { JsonLd, webApplicationSchema, organizationSchema } from '@/app/components/seo/JsonLd'
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://seu-dominio.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || 'https://stayfocus-alpha.vercel.app'),
   title: {
     default: 'StayFocus - Organização para Neurodivergentes',
     template: '%s | StayFocus',
@@ -41,7 +42,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
-    url: process.env.NEXT_PUBLIC_BASE_URL || 'https://seu-dominio.com',
+    url: process.env.NEXT_PUBLIC_BASE_URL || 'https://stayfocus-alpha.vercel.app',
     siteName: 'StayFocus',
     title: 'StayFocus - Organização para Neurodivergentes',
     description:
@@ -106,6 +107,7 @@ export default function RootLayout({
           </div>
         </Providers>
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   )

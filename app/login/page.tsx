@@ -16,6 +16,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showDonationBanner, setShowDonationBanner] = useState(false)
+
+  useEffect(() => {
+    const hasSeenBanner = localStorage.getItem('donation-banner-seen')
+    if (!hasSeenBanner) {
+      setShowDonationBanner(true)
+    }
+  }, [])
+
+  const closeDonationBanner = () => {
+    localStorage.setItem('donation-banner-seen', 'true')
+    setShowDonationBanner(false)
+  }
 
   // Note: Redirect is handled by middleware to avoid loops
 
@@ -67,6 +80,50 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4 py-12">
       <div className="w-full max-w-md">
+        {/* Banner de Doação */}
+        {showDonationBanner && (
+          <Card className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 relative">
+            <button
+              onClick={closeDonationBanner}
+              className="absolute top-2 right-2 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200"
+              aria-label="Fechar"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="flex items-start gap-3 pr-6">
+              <div className="flex-shrink-0">
+                <svg className="w-6 h-6 text-green-600 dark:text-green-400 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-semibold text-green-900 dark:text-green-100 mb-1">
+                  Ajude a manter o StayFocus gratuito
+                </h3>
+                <p className="text-sm text-green-800 dark:text-green-200 mb-3">
+                  O StayFocus é 100% gratuito e sem anúncios. Se você gosta do projeto, considere fazer uma contribuição para ajudar no desenvolvimento.
+                </p>
+                <a
+                  href="https://www.vakinha.com.br/vaquinha/stayfocus-gratuidade"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block"
+                >
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="border-green-300 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/40"
+                  >
+                    Contribuir com o projeto
+                  </Button>
+                </a>
+              </div>
+            </div>
+          </Card>
+        )}
+
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             StayFocus

@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://seu-dominio.com'
+const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://stayfocus-alpha.vercel.app'
 
 // Metadata base compartilhada
 const baseMetadata = {
