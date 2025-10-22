@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import dynamic from 'next/dynamic'
-import { Card } from '@/app/components/ui/Card'
+import { DashboardCard } from '@/app/components/ui/DashboardCard'
 import { EnvelopesVirtuais } from '@/app/components/financas/EnvelopesVirtuais'
 import { CalendarioPagamentos } from '@/app/components/financas/CalendarioPagamentos'
 import { AdicionarDespesa } from '@/app/components/financas/AdicionarDespesa'
@@ -53,26 +53,26 @@ export default function FinancasPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Rastreador de Gastos */}
-        <Card title="Rastreador de Gastos">
+        <DashboardCard title="Rastreador de Gastos" collapsible={true}>
           <RastreadorGastos />
-        </Card>
+        </DashboardCard>
 
         {/* Envelopes Virtuais */}
-        <Card title="Envelopes Virtuais">
+        <DashboardCard title="Envelopes Virtuais" collapsible={true}>
           <EnvelopesVirtuais />
-        </Card>
+        </DashboardCard>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Calendário de Pagamentos */}
-        <Card title="Calendário de Pagamentos">
+        <DashboardCard title="Calendário de Pagamentos" collapsible={true}>
           <CalendarioPagamentos />
-        </Card>
+        </DashboardCard>
 
         {/* Adicionar Despesa Rápida */}
-        <Card title="Adicionar Despesa">
+        <DashboardCard title="Adicionar Despesa" collapsible={true}>
           <AdicionarDespesa />
-        </Card>
+        </DashboardCard>
       </div>
     </div>
   )

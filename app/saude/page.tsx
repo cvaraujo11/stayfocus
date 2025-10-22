@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { DashboardCard } from '@/app/components/ui/DashboardCard'
 import { RegistroMedicamentos } from '@/app/components/saude/RegistroMedicamentos'
 import { MonitoramentoHumor } from '@/app/components/saude/MonitoramentoHumor'
 import { LoadingSpinner } from '@/app/components/common/LoadingSpinner'
@@ -35,10 +36,14 @@ export default function SaudePage() {
       
       <div className="grid grid-cols-1 gap-6">
         {/* Registro de Medicamentos */}
-        <RegistroMedicamentos />
+        <DashboardCard title="Registro de Medicamentos" collapsible={true}>
+          <RegistroMedicamentos />
+        </DashboardCard>
         
         {/* Monitoramento de Humor */}
-        <MonitoramentoHumor />
+        <DashboardCard title="Monitoramento de Humor" collapsible={true}>
+          <MonitoramentoHumor />
+        </DashboardCard>
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 'use client'
 
-import { Card } from '@/app/components/ui/Card'
+import { DashboardCard } from '@/app/components/ui/DashboardCard'
 import { PlanejadorRefeicoes } from '@/app/components/alimentacao/PlanejadorRefeicoes'
 import { RegistroRefeicoes } from '@/app/components/alimentacao/RegistroRefeicoes'
 import { LembreteHidratacao } from '@/app/components/alimentacao/LembreteHidratacao'
@@ -39,23 +39,23 @@ export default function AlimentacaoPage() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Planejador de Refeições */}
-        <Card title="Planejador de Refeições">
+        <DashboardCard title="Planejador de Refeições" collapsible={true}>
           <PlanejadorRefeicoes />
-        </Card>
+        </DashboardCard>
         
         {/* Registro Visual de Refeições */}
-        <Card title="Registro de Refeições">
+        <DashboardCard title="Registro de Refeições" collapsible={true}>
           <RegistroRefeicoes />
-        </Card>
+        </DashboardCard>
       </div>
       
       {/* Lembretes de Hidratação */}
-      <Card title="Hidratação">
+      <DashboardCard title="Hidratação" collapsible={true}>
         <LembreteHidratacao />
-      </Card>
+      </DashboardCard>
 
       {/* Card para a Seção de Receitas */}
-      <Card title="Minhas Receitas">
+      <DashboardCard title="Minhas Receitas" collapsible={true}>
         <p className="mb-4 text-gray-600 dark:text-gray-400">
           Organize e acesse suas receitas favoritas aqui. Crie listas de compras e planeje suas refeições.
         </p>
@@ -64,7 +64,7 @@ export default function AlimentacaoPage() {
             Acessar Minhas Receitas
           </Button>
         </Link>
-      </Card>
+      </DashboardCard>
     </div>
   )
 }
