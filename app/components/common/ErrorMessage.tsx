@@ -2,6 +2,7 @@
 
 import { cn } from '@/app/lib/utils'
 import { Button } from '@/app/components/ui/Button'
+import { isDevelopment } from '@/app/lib/env'
 
 interface ErrorMessageProps {
   message: string
@@ -16,7 +17,7 @@ export function ErrorMessage({
   onRetry, 
   className,
   details,
-  showDetails = process.env.NODE_ENV === 'development'
+  showDetails = isDevelopment()
 }: ErrorMessageProps) {
   const errorDetails = details instanceof Error ? details.message : details
 

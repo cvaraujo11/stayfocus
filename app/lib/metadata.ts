@@ -1,6 +1,7 @@
 import { Metadata } from 'next'
+import { getBaseUrl } from './env'
 
-const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://stayfocus-alpha.vercel.app'
+const baseUrl = getBaseUrl()
 
 // Metadata base compartilhada
 const baseMetadata = {

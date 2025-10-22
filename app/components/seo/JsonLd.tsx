@@ -1,15 +1,56 @@
 import Script from 'next/script'
+import { getBaseUrl } from '@/app/lib/env'
 
 interface JsonLdProps {
   data: Record<string, any>
 }
 
+/**
+ * Sanitizes JSON string to prevent XSS attacks in script tags
+ * 
+ * When embedding JSON in HTML script tags, certain characters must be escaped
+ * to prevent script injection attacks. This function escapes:
+ * - < (less than) → \u003c - prevents </script> tag injection
+ * - > (greater than) → \u003e - prevents > in closing tags
+ * - & (ampersand) → \u0026 - prevents HTML entity confusion
+ * 
+ * These unicode escapes are valid in JSON and JavaScript, and search engines
+ * like Google correctly parse them in JSON-LD structured data.
+ * 
+ * @param jsonString - The JSON string to sanitize
+ * @returns Sanitized JSON string safe for embedding in script tags
+ * 
+ * @example
+ * ```ts
+ * const dangerous = '{"name": "Test</script><script>alert(1)</script>"}';
+ * const safe = sanitizeJsonForScript(dangerous);
+ * // Result: '{"name": "Test\\u003c/script\\u003e\\u003cscript\\u003ealert(1)\\u003c/script\\u003e"}'
+ * ```
+ */
+function sanitizeJsonForScript(jsonString: string): string {
+  return jsonString
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+}
+
+/**
+ * JsonLd component for embedding structured data in pages
+ * 
+ * Renders JSON-LD structured data for SEO purposes. The component automatically
+ * sanitizes the JSON to prevent XSS attacks when embedding in script tags.
+ * 
+ * @param data - The structured data object to embed (Schema.org format)
+ */
 export function JsonLd({ data }: JsonLdProps) {
+  const jsonString = JSON.stringify(data)
+  const sanitizedJson = sanitizeJsonForScript(jsonString)
+  
   return (
     <Script
       id="json-ld"
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+      dangerouslySetInnerHTML={{ __html: sanitizedJson }}
     />
   )
 }
@@ -21,7 +62,7 @@ export const webApplicationSchema = {
   name: 'StayFocus',
   description:
     'Aplicativo de organização e produtividade desenvolvido especialmente para pessoas neurodivergentes com TDAH e autismo.',
-  url: process.env.NEXT_PUBLIC_BASE_URL || 'https://stayfocus-alpha.vercel.app',
+  url: getBaseUrl(),
   applicationCategory: 'ProductivityApplication',
   operatingSystem: 'Web',
   offers: {
@@ -47,8 +88,8 @@ export const organizationSchema = {
   name: 'StayFocus',
   description:
     'Desenvolvemos ferramentas de organização e produtividade para pessoas neurodivergentes.',
-  url: process.env.NEXT_PUBLIC_BASE_URL || 'https://stayfocus-alpha.vercel.app',
-  logo: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://stayfocus-alpha.vercel.app'}/images/stayfocus_logo.png`,
+  url: getBaseUrl(),
+  logo: `${getBaseUrl()}/images/stayfocus_logo.png`,
   sameAs: [
     // Adicione aqui links para redes sociais quando disponíveis
     // 'https://twitter.com/stayfocus',

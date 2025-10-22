@@ -4,6 +4,7 @@
  */
 
 import { logger } from './logger'
+import { isDevelopment } from './env'
 
 export class AppError extends Error {
   constructor(
@@ -137,7 +138,7 @@ export function getSafeErrorMessage(error: unknown): string {
     return error.message
   }
 
-  if (process.env.NODE_ENV === 'development') {
+  if (isDevelopment()) {
     return error instanceof Error ? error.message : String(error)
   }
 

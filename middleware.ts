@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import type { Database } from '@/app/types/database'
+import { env, isDevelopment } from '@/app/lib/env'
 
 /**
  * Middleware for route protection and authentication
@@ -18,8 +19,8 @@ export async function middleware(req: NextRequest) {
   })
 
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    env.NEXT_PUBLIC_SUPABASE_URL,
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         get(name: string) {
@@ -70,7 +71,16 @@ export async function middleware(req: NextRequest) {
 
   const { pathname } = req.nextUrl
 
-  console.log('🔒 Middleware:', { pathname, hasUser: !!user, email: user?.email })
+  // Debug logging only in development (LGPD/GDPR compliance - no PII in production logs)
+  if (isDevelopment()) {
+    console.log('🔒 Middleware:', {
+      pathname,
+      hasUser: !!user,
+      isProtectedRoute: !['/login', '/registro', '/auth/callback', '/termos-de-uso', '/politica-de-privacidade', '/changelog'].some(
+        (route) => pathname.startsWith(route)
+      ),
+    })
+  }
 
   // Public routes that don't require authentication
   const publicRoutes = ['/login', '/registro', '/auth/callback', '/termos-de-uso', '/politica-de-privacidade', '/changelog']
@@ -78,14 +88,20 @@ export async function middleware(req: NextRequest) {
 
   // If user is authenticated and trying to access login/registro, redirect to dashboard
   if (user && isPublicRoute && pathname !== '/auth/callback') {
-    console.log('🔒 Middleware: Redirecionando usuário autenticado para /')
+    // Debug logging only in development
+    if (isDevelopment()) {
+      console.log('🔒 Middleware: Redirecionando usuário autenticado para /')
+    }
     const redirectUrl = new URL('/', req.url)
     return NextResponse.redirect(redirectUrl)
   }
 
   // If user is not authenticated and trying to access protected route, redirect to login
   if (!user && !isPublicRoute) {
-    console.log('🔒 Middleware: Redirecionando usuário não autenticado para /login')
+    // Debug logging only in development
+    if (isDevelopment()) {
+      console.log('🔒 Middleware: Redirecionando usuário não autenticado para /login')
+    }
     const redirectUrl = new URL('/login', req.url)
     // Store the original URL to redirect back after login
     redirectUrl.searchParams.set('next', pathname)

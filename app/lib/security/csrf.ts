@@ -4,6 +4,7 @@
  */
 
 import { cookies } from 'next/headers'
+import { isProduction } from '../env'
 
 const CSRF_TOKEN_NAME = 'csrf_token'
 const CSRF_HEADER_NAME = 'x-csrf-token'
@@ -26,7 +27,7 @@ export async function setCsrfToken(): Promise<string> {
   
   cookieStore.set(CSRF_TOKEN_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isProduction(),
     sameSite: 'strict',
     maxAge: 60 * 60 * 24, // 24 hours
   })
